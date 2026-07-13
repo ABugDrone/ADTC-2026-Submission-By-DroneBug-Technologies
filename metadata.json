@@ -1,37 +1,37 @@
 {
-  "team_id": "your-team-id",
-  "domain": "coding_assistants",
+  "team_id": "DroneBug Technologies",
+  "domain": "corporate_enterprise",
   "language_scope": ["en"],
-  "african_alpha_claim": false,
+  "african_alpha_claim": true,
   "budget_laptop_claim": true,
   "submitter": {
-    "name": "your-name",
-    "email": "your-email@domain.com",
-    "github_handle": "your-github"
+    "name": "Abdulazeez Yunusa",
+    "email": "azeez.yunusa2023@gmail.com",
+    "github_handle": "ABugDrone"
   },
   "cross_disciplinary_pairing": {
-    "discipline": "education",
+    "discipline": "corporate_enterprise",
     "load_bearing": true,
-    "description": "Brief description of how your model serves a real-world domain."
+    "description": "BusinessPilot AI is an offline business copilot for African SMEs combining AI scheduling, financial analysis, CSV data exploration, and document Q&A on 8 GB laptops with no internet."
   },
   "test_prompts": [
     {
       "prompt_id": "tp_001",
-      "prompt": "Write a Python function that reads a CSV file and returns the column with the highest mean value."
+      "prompt": "A small business has revenue of 500,000 NGN, COGS of 200,000 NGN, and operating expenses of 150,000 NGN. Calculate the gross profit, gross margin percentage, and net profit. Then recommend two actions to improve profitability."
     },
     {
       "prompt_id": "tp_002",
-      "prompt": "Explain the difference between a list and a tuple in Python, and give one example where each is the better choice."
+      "prompt": "Prioritize these tasks: (1) Pay supplier invoice due tomorrow, (2) Review Q2 marketing proposals, (3) Fix critical bug in customer payment portal, (4) Plan team offsite for next month. Give a recommended order with brief reasoning for each."
     }
   ],
   "model": {
-    "name": "SmolLM2-135M-Instruct-Q4_K_M",
+    "name": "Qwen2.5-1.5B-Instruct-Q4_K_M",
     "runtime": "llama.cpp",
     "quantization": "GGUF Q4_K_M",
-    "parameters_estimate": "135M",
+    "parameters_estimate": "1.5B",
     "packaging": "binary_bundle"
   },
   "_runtime": {
-    "model_path": "model/SmolLM2-135M-Instruct-Q4_K_M.gguf"
+    "model_path": "model/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf"
   }
 }

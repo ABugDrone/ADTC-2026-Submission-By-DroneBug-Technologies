@@ -1,15 +1,25 @@
-# Model weights — never commit these to git
+# Model weights
 model/*.gguf
-model/*.bin
-model/*.safetensors
-
-# macOS
-.DS_Store
+llama-b9895-bin-win-cpu-x64/*.gguf
 
 # Python
 __pycache__/
 *.pyc
 .venv/
+venv/
+
+# Generated data
+tasks.json
+vectors.db
+*.log
+llama_cache_debug.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/
 
 # Local profiler output
 submission.json

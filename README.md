@@ -1,190 +1,123 @@
-# ADTC 2026 — Submission Template
+# BusinessPilot AI — ADTC 2026 Submission
 
-This is the official template repository for the **Africa Deep Tech Challenge 2026** Laptop LLM track.
+<img src="https://img.shields.io/badge/domain-corporate_enterprise-blue" alt="Domain: corporate_enterprise"/> <img src="https://img.shields.io/badge/runtime-llama.cpp-green" alt="Runtime: llama.cpp"/> <img src="https://img.shields.io/badge/model-Qwen2.5--1.5B--Instruct--Q4_K_M-orange" alt="Model: Qwen2.5-1.5B-Instruct-Q4_K_M"/>
 
-Fork this repository, fill in the required files, and submit your repository URL via [adtc-2026.devpost.com](https://adtc-2026.devpost.com).
+**Team:** DroneBug Technologies  
+**Track:** Africa Deep Tech Challenge 2026 — Laptop LLM  
+**Domain:** Corporate Enterprise
 
----
-
-## ✅ Submission Checklist
-
-Before submitting, confirm every item:
-
-- [ ] Your repository is **public** on GitHub
-- [ ] `metadata.json` is fully filled in — no placeholder values remain
-- [ ] `metadata.json` contains exactly **2 test prompts** in the `test_prompts` array, written for your chosen domain
-- [ ] `download_model.sh` successfully downloads your model to `model/`
-- [ ] The downloaded file is a valid **GGUF format** (`.gguf`) weight file
-- [ ] `model/*.gguf` is listed in `.gitignore` — do **not** commit large weight files
-- [ ] `REPORT.md` is filled in with your technical writeup
-- [ ] Running `bash download_model.sh` completes without errors
-- [ ] Your model runs entirely **offline** — zero external network calls during inference
+An offline business copilot for African SMEs — runs entirely on an 8 GB RAM laptop with no GPU and no internet.
 
 ---
 
-## 📁 Required File Structure
+## Overview
 
-```
-your-submission/
-├── metadata.json          ← Required. Team, model, and test prompt metadata.
-├── download_model.sh      ← Required. Downloads your .gguf model weight file.
-├── REPORT.md              ← Required. Technical writeup (problem, design, benchmarks).
-├── model/
-│   └── your-model.gguf   ← Downloaded by the script above. Do NOT commit.
-└── .gitignore             ← Must exclude *.gguf and model/ from version control.
-```
+BusinessPilot AI combines five workspaces into a single local application:
+
+| Page | Purpose |
+|---|---|
+| **Home** | System status dashboard (model health, embedding service, knowledge base) |
+| **Meetings & Tasks** | Schedule, track, and AI-prioritize tasks with native Windows notifications |
+| **Chat & Knowledge Base** | Upload documents (PDF, DOCX, XLSX), convert to Markdown, query via RAG |
+| **Data & Charts** | CSV upload, preview, AI-powered data analysis, interactive Plotly charts |
+| **Financial Analyst** | African currency support, margin analysis, CFO-style AI recommendations |
 
 ---
 
-## 📝 metadata.json
+## Tech Stack
 
-Fill in every field. No field should remain at its placeholder value.
-
-```json
-{
-  "team_id": "your-team-id",
-  "domain": "coding_assistants",
-  "language_scope": ["en"],
-  "african_alpha_claim": false,
-  "budget_laptop_claim": true,
-  "submitter": {
-    "name": "your-name",
-    "email": "your-email@domain.com",
-    "github_handle": "your-github"
-  },
-  "cross_disciplinary_pairing": {
-    "discipline": "education",
-    "load_bearing": true,
-    "description": "Brief description of how your model serves a real-world domain."
-  },
-  "test_prompts": [
-    {
-      "prompt_id": "tp_001",
-      "prompt": "Your first test prompt, written for your chosen domain."
-    },
-    {
-      "prompt_id": "tp_002",
-      "prompt": "Your second test prompt, written for your chosen domain."
-    }
-  ],
-  "model": {
-    "name": "YourModel-Q4_K_M",
-    "runtime": "llama.cpp",
-    "quantization": "GGUF Q4_K_M",
-    "parameters_estimate": "1.1B",
-    "packaging": "binary_bundle"
-  },
-  "_runtime": {
-    "model_path": "model/your-model.gguf"
-  }
-}
-```
-
-### Field Reference
-
-| Field | Required | Description |
+| Component | Choice | Rationale |
 |---|---|---|
-| `team_id` | ✅ | Your unique team ID as registered on the ADTF portal |
-| `domain` | ✅ | Your challenge track. One of: `math_scientific_reasoning`, `healthcare_medical`, `agriculture`, `creative_writing`, `coding_assistants`, `corporate_enterprise`, `autonomous_ai_agents` |
-| `language_scope` | ✅ | Array of BCP-47 language codes. Must include at least one. |
-| `african_alpha_claim` | ✅ | `true` only if claiming the African Use Case Bonus |
-| `budget_laptop_claim` | ✅ | Must be `true` — all submissions target the 8 GB RAM laptop profile |
-| `submitter.name` | ✅ | Full name of the team member submitting the run |
-| `submitter.email` | ✅ | Valid email address linked to the registered team |
-| `submitter.github_handle` | ✅ | Verifiable GitHub username |
-| `cross_disciplinary_pairing.discipline` | ✅ | The deep-tech discipline your model serves |
-| `cross_disciplinary_pairing.load_bearing` | ✅ | `true` if the pairing is integral to the submission, not cosmetic |
-| `test_prompts` | ✅ | **Exactly 2 prompts** in your chosen domain. Organizers will add 2 hidden prompts to test for overfitting. |
-| `model.runtime` | ✅ | Must be `llama.cpp`. No other runtime is accepted. |
-| `model.quantization` | ✅ | Must be a GGUF quantization format (e.g. `GGUF Q4_K_M`, `GGUF Q5_K_M`) |
-| `model.parameters_estimate` | ✅ | Approximate parameter count (e.g. `135M`, `1.1B`, `7B`) |
-| `model.packaging` | ✅ | How the model is packaged. One of: `docker_image`, `docker_build_from_repo`, `binary_bundle` |
-| `_runtime.model_path` | ✅ | Relative path from repo root to your `.gguf` file (e.g. `model/my-model.gguf`) |
+| AI model | Qwen2.5-1.5B-Instruct Q4_K_M | Strong instruction following, fits 8 GB RAM |
+| Runtime | llama.cpp (b9895) | Required by ADTC, CPU-only, no GPU |
+| UI | Streamlit | Minimal overhead, single-page architecture |
+| Vector search | sqlite-vec | Local RAG, no separate server needed |
+| Charts | Plotly | Interactive, works offline |
+| Notifications | plyer | Native Win32 bindings, no polling loops |
+| Document conversion | Microsoft MarkItDown | PDF/DOCX/XLSX/Images → Markdown for LLM |
+| Language | Python 3.14 | Offline-first, standard library preferred |
 
 ---
 
-## 📥 download_model.sh
-
-This script **must** download your model weight file to the `model/` directory.
-
-Rules:
-- Must be idempotent — safe to run multiple times without re-downloading.
-- Must work without any credentials — your weights must be publicly accessible.
-- The downloaded file path must exactly match `_runtime.model_path` in `metadata.json`.
-
-Recommended hosting options for your weights:
-- [Hugging Face](https://huggingface.co) — public model repos (free, best for GGUF files)
-- GitHub Release Assets — attach the `.gguf` file to a GitHub Release
-- Any stable public URL (GCS public bucket, S3 public object, etc.)
-
----
-
-## 📄 REPORT.md
-
-Your technical writeup. Judges and the LLM-based audit system will read this to understand your submission. Cover:
-
-1. **Problem** — What problem are you solving? Who is the target user in an African context?
-2. **Design Decisions** — What model did you start from? Why that quantization level? What alternatives did you evaluate?
-3. **Constraints** — What hardware, connectivity, or data constraints shaped your approach?
-4. **Benchmarks** — What inference speed and memory numbers did you observe on your development machine?
-
-Keep it factual and specific. One to three pages is ideal.
-
----
-
-## 🧪 Local Testing
-
-The ADTC profiler is open source. Install it directly from the official repository:
+## Quick Start
 
 ```bash
-pip install "git+https://github.com/Africa-Deep-Tech-Foundation/adtc-profiler.git"
-```
+# 1. Install Python dependencies
+pip install -r requirements.txt
 
-Then run a local smoke test before submitting:
-
-```bash
-# 1. Download your weights
+# 2. Download the model weights
 bash download_model.sh
 
-# 2. Run the profiler in participant mode
-adtc-profiler run \
-  --submission . \
-  --mode participant \
-  --output submission.json \
-  --skip-accuracy
+# 3. Start the AI server
+start_llama_server.bat
 
-# 3. Review your report
-cat submission.json
+# 4. Launch the app
+run_app.bat
 ```
 
-A valid run produces a `submission.json` with `"measured_on": "participant_laptop"`.
+Or use the all-in-one launcher:
+```bash
+run_business_pilot.bat
+```
 
-The profiler source code, including the thermal monitoring logic and scoring formulas, is publicly readable at:
-[github.com/Africa-Deep-Tech-Foundation/adtc-profiler](https://github.com/Africa-Deep-Tech-Foundation/adtc-profiler)
-
----
-
-## ⚠️ Rules
-
-1. **Public repository required.** Your repository must be public at the time of evaluation.
-2. **No model weights in git.** Add `*.gguf` and `model/` to your `.gitignore`. The evaluator downloads weights fresh via `download_model.sh`.
-3. **100% offline during evaluation.** Your model must run with zero external network dependencies during our testing window. `download_model.sh` runs before the profiler starts, but once profiling begins, no outbound requests are permitted.
-4. **llama.cpp only.** All models must use GGUF weights and run through `llama.cpp`. No other runtime is supported by our evaluation framework.
-5. **8 GB RAM limit.** Your model must run within the standard laptop profile (4 vCPU, 8 GB RAM, integrated GPU only). Out-of-memory errors during evaluation result in automatic disqualification.
-6. **No size restriction.** There is no parameter count or file size cap — but the 8 GB RAM constraint is strict. Plan your quantization level accordingly.
-7. **Two test prompts required.** Your `metadata.json` must include exactly 2 prompts in the `test_prompts` array. Organizers will generate 2 additional hidden prompts within your domain. All 4 are used for scoring.
+Then open **http://localhost:8081** in your browser.
 
 ---
 
-## 🆘 Support
+## Project Structure
 
-Open an issue in this repository or contact the ADTF team at challenge@africadeeptech.org.
-
-View the full eligibility rules at [adtc-2026.devpost.com/rules](https://adtc-2026.devpost.com/rules).
+```
+├── app.py                          # Streamlit entry point (Home page)
+├── pages/
+│   ├── 1_Calendar_and_Tasks.py     # Task scheduler with AI prioritization
+│   ├── 2_Chat_and_RAG.py           # Document upload, conversion, RAG chat
+│   ├── 3_Data_and_Charts.py        # CSV analysis + interactive charts
+│   └── 4_Financial_Analyst.py      # Financial metrics, African currencies
+├── utils/
+│   ├── config.py                   # Environment & path configuration
+│   ├── theme.py                    # Dark/light theme, CSS, UI components
+│   ├── ai_engine.py                # Async llama.cpp chat & embedding client
+│   └── db.py                       # sqlite-vec vector storage (RAG)
+├── modules/
+│   ├── task_manager.py             # Task persistence + daemon scheduler
+│   ├── financial.py                # Margin/CFO analysis, African currencies
+│   ├── data_analysis.py            # CSV profiling & insight prompt builder
+│   ├── markitdown_skill.py         # Document → Markdown converter
+│   └── notification.py             # plyer Windows notification wrapper
+├── metadata.json                   # ADTC submission metadata
+├── download_model.sh               # Downloads Qwen2.5-1.5B Q4_K_M
+├── REPORT.md                       # Technical writeup
+├── requirements.txt                # Python dependencies
+├── start_llama_server.bat          # Starts llama.cpp server
+├── run_app.bat                     # Starts Streamlit UI
+└── run_business_pilot.bat          # All-in-one launcher
+```
 
 ---
 
-## 📄 License
+## Offline Design
 
-This template is licensed under the terms of the [GNU GPL v3 License](LICENSE).
+- **No cloud calls** during inference — zero outbound requests after model load
+- **Inline SVG icons** — no CDN dependency for UI rendering (Tabler-style paths in `theme.py`)
+- **Local RAG** — sqlite-vec stores embeddings in `vectors.db`, no external vector DB
+- **Scheduler** — daemon thread with native Win32 notifications via plyer
+- **Document conversion** — MarkItDown fallback to manual text parsing when package absent
+
+---
+
+## Submission Files
+
+| File | Status |
+|---|---|
+| `metadata.json` | ✅ Filled |
+| `download_model.sh` | ✅ Downloads Qwen2.5-1.5B-Instruct-Q4_K_M |
+| `REPORT.md` | ✅ Complete technical writeup |
+| `model/.gitkeep` | ✅ Placeholder (model weights excluded via `.gitignore`) |
+| `.gitignore` | ✅ Excludes `.gguf`, `__pycache__`, `tasks.json` |
+
+---
+
+## License
+
+This project is licensed under the terms of the [GNU GPL v3 License](LICENSE).
 

@@ -21,9 +21,6 @@ Target users include micro-entrepreneurs, SME owners, accountants, and operation
 - **Runtime:** llama.cpp (b9895, Windows CPU build) — the only supported runtime per ADTC rules. No GPU required.
 - **Alternatives rejected:** DeepSeek-R1-Distill-Qwen-7B was considered but at 7B Q4 it would leave insufficient headroom alongside Python + Streamlit + browser in 8 GB RAM. Phi-3-mini (3.8B) was heavier than needed for structured business tasks.
 - **Application stack:** Streamlit for the UI (minimal overhead, single-page app), plyer for native Windows notifications (avoids background polling loops), and Plotly for interactive charts. No heavy frontend frameworks.
-- **Vector search:** sqlite-vec provides local RAG without needing a separate vector database server.
-- **Document conversion:** Microsoft MarkItDown (`markitdown` package) converts uploaded PDFs, DOCX, XLSX, and images to Markdown for LLM ingestion, with a manual text fallback when the package is unavailable.
-- **Development tooling:** Kombai was used for iterative UI fixes (before/after screenshot comparison of Streamlit component styling), and OpenCode CLI for AI-assisted development workflow — both are development-time tools, not runtime dependencies.
 - **Background scheduler:** A daemon thread checks task timestamps every 60 seconds against the system clock and fires native Windows notifications via plyer when an event is due. No external cron or task scheduler dependency.
 
 ---
