@@ -31,6 +31,7 @@ BusinessPilot AI combines five workspaces into a single local application:
 | AI model | Qwen2.5-1.5B-Instruct Q4_K_M | Strong instruction following, fits 8 GB RAM |
 | Runtime | llama.cpp (b9895) | Required by ADTC, CPU-only, no GPU |
 | UI | Streamlit | Minimal overhead, single-page architecture |
+| HTTP client | httpx | Async HTTP for llama-server API calls |
 | Vector search | sqlite-vec | Local RAG, no separate server needed |
 | Charts | Plotly | Interactive, works offline |
 | Notifications | plyer | Native Win32 bindings, no polling loops |

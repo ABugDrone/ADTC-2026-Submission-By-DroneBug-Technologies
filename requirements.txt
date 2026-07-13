@@ -2,7 +2,6 @@ streamlit>=1.38.0
 pandas
 plotly
 httpx
-requests
 plyer
 sqlite-vec
 numpy
