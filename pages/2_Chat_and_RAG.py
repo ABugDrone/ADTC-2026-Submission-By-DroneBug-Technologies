@@ -84,7 +84,7 @@ with st.container(border=True):
         st.session_state.md_name = uploaded.name
 
     if st.session_state.md_raw:
-        col_a, col_b, col_c, col_d = st.columns([1.2, 1.2, 1.2, 1])
+        col_a, col_b, col_c, col_d, col_e = st.columns([1.1, 1.1, 1.1, 1.1, 0.8])
         md_ok = bool(st.session_state.md_text)
         can_index = md_ok and len(st.session_state.md_text.strip()) >= 20
 
@@ -134,6 +134,28 @@ with st.container(border=True):
                 st.session_state.md_name = ""
                 st.session_state.md_text = ""
                 st.session_state.pop("_insight", None)
+                st.session_state.pop("_classification", None)
+                st.rerun()
+
+        with col_e:
+            if st.button("Classify", disabled=not md_ok, use_container_width=True):
+                with st.spinner("Classifying..."):
+                    classify_prompt = (
+                        f"Analyze this document titled '{st.session_state.md_name}':\n\n"
+                        f"{st.session_state.md_text[:2000]}\n\n"
+                        "Identify recurring keywords and determine the document category. "
+                        "Respond in exactly this format:\n"
+                        "CATEGORY: [one of: Management, Marketing, Finance, Human Resources, Legal, Business Politics, Technical, General]\n"
+                        "KEYWORDS: [3-5 most frequent/relevant keywords comma-separated]\n"
+                        "REASON: [1 sentence explaining why based on keyword patterns]"
+                    )
+                    classification = ai_engine.query_model(
+                        classify_prompt,
+                        "You are a document analyst. Classify the document type based on keyword patterns.",
+                    )
+                    st.session_state["_classification"] = (
+                        classification.text if classification.ok else f"Error: {classification.error}"
+                    )
                 st.rerun()
 
         # Status pills
@@ -142,6 +164,8 @@ with st.container(border=True):
             status_pills.append(theme.status_badge("Converted", "success"))
         if st.session_state.get("_insight"):
             status_pills.append(theme.status_badge("Insight ready", "success"))
+        if st.session_state.get("_classification"):
+            status_pills.append(theme.status_badge("Classified", "warning"))
         st.markdown("&nbsp;&nbsp;" + " ".join(status_pills), unsafe_allow_html=True)
 
         if st.session_state.md_text:
@@ -157,6 +181,10 @@ with st.container(border=True):
         if st.session_state.get("_insight"):
             with st.expander("AI Insight", expanded=True):
                 st.markdown(st.session_state["_insight"])
+
+        if st.session_state.get("_classification"):
+            with st.expander("Document Classification", expanded=True):
+                st.markdown(st.session_state["_classification"])
     else:
         theme.empty_state(
             icon_name="file-upload",

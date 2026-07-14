@@ -13,6 +13,7 @@ tasks.json
 vectors.db
 *.log
 llama_cache_debug.txt
+documents/chats/
 
 # OS
 .DS_Store
