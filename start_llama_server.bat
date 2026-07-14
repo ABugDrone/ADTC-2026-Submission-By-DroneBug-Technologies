@@ -23,7 +23,7 @@ exit /b 1
 
 :found
 echo MODEL_FOUND=%GGUF_PATH%
-llama-server -m "%GGUF_PATH%" --jinja -c 4096 -t 2 -b 256 --host 127.0.0.1 --port 8033 --embedding --pooling mean
+llama-server -m "%GGUF_PATH%" --jinja -c 4096 -t 2 -b 512 --host 127.0.0.1 --port 8033 --embedding --pooling mean
 set "EXIT_CODE=%ERRORLEVEL%"
 echo LLAMA_SERVER_EXIT=%EXIT_CODE%
 if %EXIT_CODE% neq 0 (

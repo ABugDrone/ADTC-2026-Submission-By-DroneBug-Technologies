@@ -5,7 +5,7 @@ set "PYTHON_SCRIPTS=%APPDATA%\Python\Python314\Scripts"
 set "PATH=%PYTHON_SCRIPTS%;%PATH%"
 
 :: Verify dependencies are installed (offline check only)
-python -c "import streamlit, pandas, plotly, requests, httpx, plyer, sqlite_vec, numpy" 2>nul
+python -c "import streamlit, pandas, plotly, httpx, plyer, sqlite_vec, numpy" 2>nul
 if errorlevel 1 (
     echo [ERROR] Missing Python packages.
     echo Run: pip install streamlit pandas plotly requests httpx plyer sqlite-vec
