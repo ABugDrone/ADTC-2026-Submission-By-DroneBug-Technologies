@@ -40,10 +40,6 @@ def init_db(embed_dim: int = config.EMBED_DIM) -> None:
         )
         """
     )
-    try:
-        conn.execute("ALTER TABLE doc_metadata ADD COLUMN embedded INTEGER DEFAULT 0")
-    except Exception:
-        pass
     conn.commit()
     conn.close()
 
@@ -95,15 +91,20 @@ def search(query: str, top_k: int = config.RAG_TOP_K) -> list[RetrievedChunk]:
             "ORDER BY v.distance",
             (json.dumps(result.vector), top_k),
         ).fetchall()
-        conn.close()
-        return [
-            RetrievedChunk(
-                content=r["chunk_text"], source=r["doc_name"],
-                distance=r["distance"], method="vector"
-            )
-            for r in rows
-        ]
+        if rows:
+            conn.close()
+            return [
+                RetrievedChunk(
+                    content=r["chunk_text"], source=r["doc_name"],
+                    distance=r["distance"], method="vector"
+                )
+                for r in rows
+            ]
+
     terms = query.lower().split()
+    if not terms:
+        conn.close()
+        return []
     placeholders = " OR ".join(["chunk_text LIKE ?"] * len(terms))
     params = [f"%{t}%" for t in terms]
     rows = conn.execute(
@@ -156,5 +157,9 @@ def chunk_count() -> int:
 
 
 def _chunk_text(text: str, chunk_size: int = config.RAG_CHUNK_SIZE) -> list[str]:
+    if not text or not text.strip():
+        return []
     words = text.split()
+    if len(words) <= chunk_size:
+        return [text]
     return [" ".join(words[i : i + chunk_size]) for i in range(0, len(words), chunk_size)]

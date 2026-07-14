@@ -1,7 +1,7 @@
 import streamlit as st
 
 from modules.task_manager import TaskManager
-from utils import ai_engine, config, db, theme
+from utils import ai_engine, config, db, seed_kb, theme
 
 st.set_page_config(
     page_title="BusinessPilot AI",
@@ -13,6 +13,15 @@ st.set_page_config(
 TaskManager.initialize()
 theme.init_theme_state()
 theme.inject_css()
+
+# Seed the knowledge base with built-in business knowledge
+try:
+    db.init_db()
+    n = seed_kb.seed_knowledge_base()
+    if n:
+        st.session_state["_kb_seeded"] = n
+except Exception:
+    pass
 
 for key, default in [
     ("chat_history", []),
@@ -65,7 +74,11 @@ with col3:
         try:
             db.init_db()
             count = db.chunk_count()
-            st.caption(f"{count} chunk(s) stored locally")
+            seeded = st.session_state.get("_kb_seeded", 0)
+            label = f"{count} chunk(s) stored locally"
+            if seeded:
+                label += f" ({seeded} business topics seeded)"
+            st.caption(label)
             st.markdown(theme.status_badge("sqlite-vec", "accent"), unsafe_allow_html=True)
         except Exception as e:
             st.error(f"sqlite-vec unavailable: {e}")

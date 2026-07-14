@@ -1,7 +1,7 @@
 import streamlit as st
 
 from modules.markitdown_skill import convert_to_markdown
-from utils import ai_engine, db, theme
+from utils import ai_engine, chat_store, db, theme
 
 st.set_page_config(page_title="Chat & Knowledge Base · BusinessPilot AI", page_icon="", layout="wide")
 theme.init_theme_state()
@@ -9,6 +9,36 @@ theme.inject_css()
 
 with st.sidebar:
     theme.sidebar_nav("Chat & Knowledge Base")
+    st.divider()
+
+    # --- Saved Chats sidebar ---
+    st.markdown("<p class='section-label' style='margin-top:0;'>Saved Chats</p>", unsafe_allow_html=True)
+    saved = chat_store.list_chats()
+    current_id = st.session_state.get("chat_id")
+
+    if st.button("+ New Chat", use_container_width=True, key="new_chat_btn"):
+        for k in ("chat_id", "chat_title", "messages"):
+            st.session_state.pop(k, None)
+        st.rerun()
+
+    if saved:
+        for c in saved:
+            active = "active" if c["id"] == current_id else ""
+            label = c["title"][:30] + ("..." if len(c["title"]) > 30 else "")
+            if st.button(f"{'>> ' if active else ''}{label}", key=f"sc_{c['id']}", use_container_width=True):
+                data = chat_store.load_chat(c["id"])
+                if data:
+                    st.session_state.chat_id = c["id"]
+                    st.session_state.chat_title = data.get("title", "Untitled")
+                    st.session_state.messages = data.get("messages", [])
+                st.rerun()
+
+        st.divider()
+        if current_id and st.button("Delete current chat", use_container_width=True, type="secondary"):
+            chat_store.delete_chat(current_id)
+            for k in ("chat_id", "chat_title", "messages"):
+                st.session_state.pop(k, None)
+            st.rerun()
 
 theme.page_header(
     "Chat & Knowledge Base",
@@ -16,14 +46,29 @@ theme.page_header(
 )
 
 # --- Session state initialisation ---
-for k in ("md_raw", "md_name", "md_text", "rag_log", "messages"):
+for k in ("md_raw", "md_name", "md_text", "rag_log", "messages", "chat_id", "chat_title"):
     if k not in st.session_state:
         if k == "rag_log":
             st.session_state[k] = []
         elif k == "messages":
             st.session_state[k] = []
-        else:
-            st.session_state[k] = "" if "text" in k else None
+        elif k in ("md_raw",):
+            st.session_state[k] = None
+        elif k in ("md_text", "md_name", "chat_title"):
+            st.session_state[k] = ""
+        elif k == "chat_id":
+            st.session_state[k] = chat_store.new_chat_id()
+
+if not st.session_state.chat_title:
+    st.session_state.chat_title = "Untitled chat"
+
+# --- Auto-save messages ---
+if st.session_state.messages:
+    chat_store.save_chat(
+        st.session_state.chat_id,
+        st.session_state.chat_title,
+        st.session_state.messages,
+    )
 
 # --- Document upload ---
 with st.container(border=True):
@@ -41,6 +86,7 @@ with st.container(border=True):
     if st.session_state.md_raw:
         col_a, col_b, col_c, col_d = st.columns([1.2, 1.2, 1.2, 1])
         md_ok = bool(st.session_state.md_text)
+        can_index = md_ok and len(st.session_state.md_text.strip()) >= 20
 
         with col_a:
             if st.button("Convert to Markdown", disabled=md_ok, use_container_width=True):
@@ -51,35 +97,35 @@ with st.container(border=True):
                 st.rerun()
 
         with col_b:
-            if st.button("Add to Knowledge Base", use_container_width=True):
-                try:
-                    text = st.session_state.md_raw.decode("utf-8", errors="replace")
-                except Exception:
-                    text = str(st.session_state.md_raw)
-                if len(text.strip()) < 20:
-                    st.error("Document too short (< 20 chars).")
-                else:
-                    with st.spinner("Chunking & embedding..."):
-                        result = db.add_document(st.session_state.md_name, text)
-                    st.session_state.rag_log.append(
-                        f"Indexed **{st.session_state.md_name}** — {result['chunks']} chunks "
-                        f"({result['embedded']} with vectors)"
-                    )
+            if st.button("Add to Knowledge Base", disabled=not can_index, use_container_width=True):
+                text = st.session_state.md_text
+                with st.spinner("Chunking & embedding..."):
+                    result = db.add_document(st.session_state.md_name, text)
+                st.session_state.rag_log.append(
+                    f"Indexed **{st.session_state.md_name}** — {result['chunks']} chunks "
+                    f"({result['embedded']} with vectors)"
+                )
                 st.rerun()
 
         with col_c:
-            if st.button("Get AI Insight", disabled=not md_ok, use_container_width=True):
-                prompt = (
-                    f"Analyse this document titled '{st.session_state.md_name}':\n\n"
-                    f"{st.session_state.md_text[:3000]}\n\n"
-                    "Provide: 1) key topics, 2) 3-5 key takeaways, 3) recommended actions."
+            if st.button("Summarize & Index", disabled=not can_index, use_container_width=True):
+                with st.spinner("Summarizing and indexing..."):
+                    summary_prompt = (
+                        f"Summarize the following document in 3-4 sentences:\n\n"
+                        f"{st.session_state.md_text[:2000]}"
+                    )
+                    summary_result = ai_engine.query_model(
+                        summary_prompt,
+                        "You are a business analyst. Provide concise summaries.",
+                    )
+                    summary_text = summary_result.text if summary_result.ok else "(summary failed)"
+                    label = f"{st.session_state.md_name} (RAG summary)"
+                    full_text = f"SUMMARY: {summary_text}\n\n---\n\n{st.session_state.md_text}"
+                    result = db.add_document(label, full_text)
+                st.session_state.rag_log.append(
+                    f"Summarized & indexed **{st.session_state.md_name}** — "
+                    f"{result['chunks']} chunks ({result['embedded']} with vectors)"
                 )
-                with st.spinner("Analysing..."):
-                    result = ai_engine.query_model(prompt)
-                if result.ok:
-                    st.session_state["_insight"] = result.text
-                else:
-                    st.session_state["_insight"] = f"Error: {result.error}"
                 st.rerun()
 
         with col_d:
@@ -152,6 +198,10 @@ for msg in st.session_state.messages:
 if user_query := st.chat_input(
     "Ask about the uploaded document, your knowledge base, or anything else..."
 ):
+    # Auto-title on first message
+    if not st.session_state.messages:
+        st.session_state.chat_title = user_query[:50] + ("..." if len(user_query) > 50 else "")
+
     with st.chat_message("user"):
         st.markdown(user_query)
     st.session_state.messages.append({"role": "user", "content": user_query})
@@ -195,3 +245,10 @@ if user_query := st.chat_input(
         else:
             st.error(result.error)
             st.session_state.messages.append({"role": "assistant", "content": f"Error: {result.error}"})
+
+    # Persist after each exchange
+    chat_store.save_chat(
+        st.session_state.chat_id,
+        st.session_state.chat_title,
+        st.session_state.messages,
+    )
