@@ -85,6 +85,7 @@ Then open **http://localhost:8081** in your browser.
 │   ├── data_analysis.py            # CSV profiling & insight prompt builder
 │   ├── markitdown_skill.py         # Document → Markdown converter
 │   └── notification.py             # plyer Windows notification wrapper
+├── Project Reports/                   # Test screenshots (11-14.png)
 ├── metadata.json                   # ADTC submission metadata
 ├── download_model.sh               # Downloads Qwen2.5-1.5B Q4_K_M
 ├── REPORT.md                       # Technical writeup
@@ -93,6 +94,21 @@ Then open **http://localhost:8081** in your browser.
 ├── run_app.bat                     # Starts Streamlit UI
 └── run_business_pilot.bat          # All-in-one launcher
 ```
+
+---
+
+## Test Results
+
+Functional tests executed on the running application (localhost:8081, 14 July 2026):
+
+| Test | Page | What was tested | Result |
+|---|---|---|---|
+| 1 | Chat & Knowledge Base | RAG query: "marketing tips for AI offline apps" | 10-point structured response generated offline |
+| 2 | Data & Charts | CSV upload + Plotly line chart rendering | Chart built client-side, AI analysis active |
+| 3 | Financial Analyst | Nigerian Naira input (₦100k revenue, ₦40k COGS, ₦30k OpEx) | Correct metrics: ₦60k gross profit, 60% margin |
+| 4 | Financial Analyst | CFO Summary generation | 3 actionable recommendations produced offline |
+
+Screenshots are in the `Project Reports/` folder (files `11.png` through `14.png`).
 
 ---
 
@@ -112,7 +128,8 @@ Then open **http://localhost:8081** in your browser.
 |---|---|
 | `metadata.json` | ✅ Filled |
 | `download_model.sh` | ✅ Downloads Qwen2.5-1.5B-Instruct-Q4_K_M |
-| `REPORT.md` | ✅ Complete technical writeup |
+| `REPORT.md` | ✅ Complete technical writeup with test results |
+| `Project Reports/` | ✅ Test screenshots (11.png – 14.png) |
 | `model/.gitkeep` | ✅ Placeholder (model weights excluded via `.gitignore`) |
 | `.gitignore` | ✅ Excludes `.gguf`, `__pycache__`, `tasks.json` |
 
