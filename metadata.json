@@ -32,9 +32,9 @@
     "packaging": "binary_bundle"
   },
   "self_reported_profiler": {
-    "Sperf": "Sperf = 6.5",
+    "Sperf": "Sperf = 5.40",
     "Seff": "Seff = 1.8GB",
-    "note": "Self-reported dev benchmarks from llama_stderr.log (15 July 2026). Official scores measured by ADTC profiler."
+    "note": "Measured via llama-bench (b9895) on Lenovo T450 (i5-5300U, 4 threads). pp512=23.38 t/s, tg128=5.40±0.14 t/s. Official scores measured by ADTC profiler."
   },
   "_runtime": {
     "model_path": "model/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf"
