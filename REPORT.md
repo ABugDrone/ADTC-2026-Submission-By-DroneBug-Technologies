@@ -47,10 +47,13 @@ Observed on Lenovo T450 (i5-5300U, 8 GB DDR3, Windows 10, CPU-only):
 | Machine | Lenovo T450 (i5-5300U, 8 GB) |
 | RAM at peak (app + model) | ~1.8 GB |
 | Time to first token | ~480 ms |
-| Generation speed | ~14.2 t/s |
+| Generation speed | ~6.5 t/s (sustained) |
+| Prompt processing | ~25 t/s |
 | Thermal throttling | None observed (sustained 60-65 °C) |
 | Background scheduler overhead | <0.5% CPU, negligible RAM |
 | Streamlit page load | ~1.2 s cold start |
+| **Self-reported Sperf** | **Sperf = 6.5** |
+| **Self-reported Seff** | **Seff = 1.8GB** |
 
 These are self-reported development benchmarks. Official scores are measured by the ADTC profiler on the standard evaluation machine.
 

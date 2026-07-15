@@ -31,6 +31,11 @@
     "parameters_estimate": "1.5B",
     "packaging": "binary_bundle"
   },
+  "self_reported_profiler": {
+    "Sperf": "Sperf = 6.5",
+    "Seff": "Seff = 1.8GB",
+    "note": "Self-reported dev benchmarks from llama_stderr.log (15 July 2026). Official scores measured by ADTC profiler."
+  },
   "_runtime": {
     "model_path": "model/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf"
   }
