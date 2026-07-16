@@ -11,34 +11,67 @@ with st.sidebar:
     theme.sidebar_nav("Chat & Knowledge Base")
     st.divider()
 
-    # --- Saved Chats sidebar ---
-    st.markdown("<p class='section-label' style='margin-top:0;'>Saved Chats</p>", unsafe_allow_html=True)
-    saved = chat_store.list_chats()
-    current_id = st.session_state.get("chat_id")
+    # --- Chat Library ---
+    st.markdown("<p class='section-label' style='margin-top:0;'>Chat Library</p>", unsafe_allow_html=True)
 
     if st.button("+ New Chat", use_container_width=True, key="new_chat_btn"):
         for k in ("chat_id", "chat_title", "messages"):
             st.session_state.pop(k, None)
         st.rerun()
 
+    saved = chat_store.list_chats()
+    current_id = st.session_state.get("chat_id")
+
     if saved:
         for c in saved:
-            active = "active" if c["id"] == current_id else ""
-            label = c["title"][:30] + ("..." if len(c["title"]) > 30 else "")
-            if st.button(f"{'>> ' if active else ''}{label}", key=f"sc_{c['id']}", use_container_width=True):
-                data = chat_store.load_chat(c["id"])
-                if data:
-                    st.session_state.chat_id = c["id"]
-                    st.session_state.chat_title = data.get("title", "Untitled")
-                    st.session_state.messages = data.get("messages", [])
-                st.rerun()
+            active = c["id"] == current_id
+            prefix = ">> " if active else ""
+            label = f"{prefix}{c['title'][:28]}{'...' if len(c['title']) > 28 else ''}"
+            msg_count = c.get("message_count", 0)
+            created = c.get("created_at", "")[:10] if c.get("created_at") else ""
+
+            cols = st.columns([5, 1])
+            with cols[0]:
+                if st.button(label, key=f"sc_{c['id']}", use_container_width=True):
+                    data = chat_store.load_chat(c["id"])
+                    if data:
+                        st.session_state.chat_id = c["id"]
+                        st.session_state.chat_title = data.get("title", "Untitled")
+                        st.session_state.messages = data.get("messages", [])
+                    st.rerun()
+            with cols[1]:
+                if st.button("x", key=f"del_{c['id']}", help=f"Delete '{c['title']}'"):
+                    chat_store.delete_chat(c["id"])
+                    if current_id == c["id"]:
+                        for k in ("chat_id", "chat_title", "messages"):
+                            st.session_state.pop(k, None)
+                    st.rerun()
+
+            st.caption(f"{msg_count} msgs | {created}" if created else f"{msg_count} msgs")
 
         st.divider()
-        if current_id and st.button("Delete current chat", use_container_width=True, type="secondary"):
-            chat_store.delete_chat(current_id)
-            for k in ("chat_id", "chat_title", "messages"):
-                st.session_state.pop(k, None)
-            st.rerun()
+
+        if current_id:
+            col_rn, col_d = st.columns([3, 2])
+            with col_rn:
+                new_title = st.text_input("Rename", value=st.session_state.get("chat_title", ""), label_visibility="collapsed", placeholder="Rename...")
+                if new_title and new_title != st.session_state.get("chat_title"):
+                    st.session_state.chat_title = new_title
+                    if st.session_state.messages:
+                        chat_store.save_chat(
+                            st.session_state.chat_id,
+                            st.session_state.chat_title,
+                            st.session_state.messages,
+                        )
+                    st.rerun()
+            with col_d:
+                if st.button("Delete current", use_container_width=True, type="secondary"):
+                    chat_store.delete_chat(current_id)
+                    for k in ("chat_id", "chat_title", "messages"):
+                        st.session_state.pop(k, None)
+                    st.rerun()
+    else:
+        st.caption("No saved chats yet.")
 
 theme.page_header(
     "Chat & Knowledge Base",

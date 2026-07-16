@@ -4,7 +4,7 @@ import streamlit as st
 
 from modules.data_analysis import DataAnalyzer
 from modules.markitdown_skill import convert_to_markdown
-from utils import ai_engine, theme
+from utils import ai_engine, db, theme
 
 st.set_page_config(page_title="Data & Charts · BusinessPilot AI", page_icon="", layout="wide")
 theme.init_theme_state()
@@ -12,13 +12,26 @@ theme.inject_css()
 
 with st.sidebar:
     theme.sidebar_nav("Data & Charts")
+    st.divider()
+    st.markdown("<p class='section-label'>Knowledge Base (RAG)</p>", unsafe_allow_html=True)
+    db.init_db()
+    rag_docs = db.list_documents()
+    if rag_docs:
+        for d in rag_docs:
+            st.caption(f"{d['doc_name']} — {d['chunks']} chunks")
+    else:
+        st.caption("No indexed documents yet.")
+    if st.button("Clear KB cache", use_container_width=True):
+        for d in rag_docs:
+            db.delete_document(d["doc_name"])
+        st.rerun()
 
 theme.page_header("Data Explorer & Charts", "Upload a CSV or document to preview, analyze, and build charts.")
 
-# --- Session state for document mode ---
-for k in ("doc_raw", "doc_name", "doc_text"):
+# --- Session state ---
+for k in ("doc_raw", "doc_name", "doc_text", "rag_log"):
     if k not in st.session_state:
-        st.session_state[k] = None if k == "doc_raw" else ""
+        st.session_state[k] = None if k == "doc_raw" else ([] if k == "rag_log" else "")
 
 upload_type = st.radio("Upload type", ["CSV (data)", "Document (PDF, DOCX, XLSX, ...)"], horizontal=True, label_visibility="collapsed")
 
@@ -109,6 +122,23 @@ if upload_type.startswith("CSV"):
                         r = ai_engine.query_model(ctx, "You are a data analyst. Answer with specific numbers.")
                     st.markdown(r.text if r.ok else r.error)
 
+        # Index CSV to knowledge base
+        st.divider()
+        with st.container(border=True):
+            st.markdown("<p class='section-label'>Index Dataset to Knowledge Base (RAG)</p>", unsafe_allow_html=True)
+            col_idx, col_summ = st.columns([1, 2])
+            with col_idx:
+                if st.button("Index this dataset", use_container_width=True):
+                    md_desc = f"DATASET: {uploaded_file.name}\n\nColumns: {', '.join(df.columns)}\n\nPreview:\n{df.head(10).to_markdown()}\n\nStatistical Summary:\n{df.describe(include='all').to_markdown()}"
+                    with st.spinner("Chunking & embedding..."):
+                        result = db.add_document(uploaded_file.name, md_desc)
+                    st.session_state.rag_log.append(f"Indexed dataset **{uploaded_file.name}** — {result['chunks']} chunks ({result['embedded']} with vectors)")
+
+            with col_summ:
+                if st.session_state.rag_log:
+                    for msg in st.session_state.rag_log:
+                        st.caption(msg)
+
 else:
     uploaded_doc = st.file_uploader(
         "Upload a document (.txt, .md, .pdf, .docx, .xlsx, .pptx, .jpg, .png)",
@@ -121,7 +151,7 @@ else:
         st.session_state.doc_name = uploaded_doc.name
 
     if st.session_state.doc_raw:
-        col_a, col_b = st.columns([1, 1])
+        col_a, col_b, col_c = st.columns([1, 1, 1])
         with col_a:
             if st.button("Convert to Markdown", use_container_width=True):
                 with st.spinner("Converting..."):
@@ -130,16 +160,24 @@ else:
                     )
                 st.rerun()
         with col_b:
+            md_ok = bool(st.session_state.doc_text) and len(st.session_state.doc_text.strip()) >= 20
+            if st.button("Index to KB", disabled=not md_ok, use_container_width=True):
+                with st.spinner("Indexing..."):
+                    result = db.add_document(st.session_state.doc_name, st.session_state.doc_text)
+                st.session_state.rag_log.append(f"Indexed **{st.session_state.doc_name}** — {result['chunks']} chunks ({result['embedded']} with vectors)")
+                st.rerun()
+        with col_c:
             if st.button("Clear", use_container_width=True):
                 st.session_state.doc_raw = None
                 st.session_state.doc_name = ""
                 st.session_state.doc_text = ""
+                st.session_state.rag_log = []
                 st.rerun()
 
         if st.session_state.doc_text:
             st.caption(f"**{st.session_state.doc_name}** — {len(st.session_state.doc_text):,} chars converted")
 
-            doc_tab1, doc_tab2 = st.tabs(["Preview", "Ask AI"])
+            doc_tab1, doc_tab2, doc_tab3 = st.tabs(["Preview", "Ask AI", "RAG Search"])
 
             with doc_tab1:
                 with st.expander("Converted text", expanded=True):
@@ -163,6 +201,26 @@ else:
                             st.success(r.text)
                         else:
                             st.error(r.error)
+
+            with doc_tab3:
+                with st.container(border=True):
+                    st.markdown("<p class='section-label'>Vector Search (Knowledge Base)</p>", unsafe_allow_html=True)
+                    rag_query = st.text_input("Search the knowledge base", placeholder="e.g., find similar documents...", label_visibility="collapsed")
+                    if st.button("Search KB", use_container_width=True) and rag_query:
+                        results = db.search(rag_query)
+                        if results:
+                            for r in results[:5]:
+                                with st.container(border=True):
+                                    st.markdown(f"**Source:** `{r.source}`")
+                                    st.markdown(r.content[:400])
+                                    st.caption(f"Score: {r.score:.3f}" if r.score else "")
+                        else:
+                            st.info("No relevant results found.")
+
+            if st.session_state.rag_log:
+                st.divider()
+                for msg in st.session_state.rag_log:
+                    st.success(msg)
     else:
         theme.empty_state(
             icon_name="table",

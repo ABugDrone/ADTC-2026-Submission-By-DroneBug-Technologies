@@ -23,7 +23,7 @@ timeout /t 1 /nobreak >nul
 :: --- 1. Start llama.cpp + Qwen model server ---
 echo %ESC%[33m[1/2]%ESC%[0m Starting local AI model...
 echo       llama-server with Qwen2.5-1.5B-Instruct Q4_K_M on port %LLAMA_PORT%
-start "BusinessPilot-LlamaServer" /min cmd /c "call "%ROOT%\start_llama_server.bat" > "%ROOT%\llama_stdout.log" 2>&1"
+start "BusinessPilot-LlamaServer" /min "%ROOT%\start_llama_server.bat"
 
 set "WAIT=0"
 <nul set /p "=      waiting"
@@ -35,7 +35,7 @@ if errorlevel 1 (
     if !WAIT! geq 60 (
         echo.
         echo %ESC%[91m[ERROR]%ESC%[0m Model server did not respond within 60s.
-        echo         Check llama_stdout.log for details.
+        echo         Check llama_stderr.log for details.
         pause
         exit /b 1
     )
@@ -48,7 +48,7 @@ echo %ESC%[32m      Model server is up on port %LLAMA_PORT%.%ESC%[0m
 :: --- 2. Start the Streamlit app ---
 echo %ESC%[33m[2/2]%ESC%[0m Starting BusinessPilot app...
 echo       Streamlit dashboard on port %APP_PORT%
-start "BusinessPilot-App" /min cmd /c "call "%ROOT%\run_app.bat" > "%ROOT%\app_stdout.log" 2>&1"
+start "BusinessPilot-App" /min "%ROOT%\run_app.bat"
 
 set "WAIT=0"
 <nul set /p "=      waiting"
