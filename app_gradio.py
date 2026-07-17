@@ -408,7 +408,7 @@ def clear_completed_tasks():
     TaskManager.clear_completed()
     return "Completed tasks cleared."
 
-with gr.Blocks(title="BusinessPilot AI", theme=gr.themes.Soft(primary_hue="indigo", neutral_hue="slate"), css="footer {display:none !important}") as demo:
+with gr.Blocks(title="BusinessPilot AI") as demo:
     gr.Markdown("# BusinessPilot AI  \nYour offline AI workspace — nothing here leaves this machine.")
     lang_selector = gr.Radio(["English", "Hausa"], value="English", label="Language", info="Switch between English and Hausa")
 
@@ -596,4 +596,4 @@ with gr.Blocks(title="BusinessPilot AI", theme=gr.themes.Soft(primary_hue="indig
             demo.load(fn=finance_calc, inputs=[fin_revenue, fin_cogs, fin_opex, fin_cur], outputs=[fin_metrics, fin_chart])
 
 if __name__ == "__main__":
-    demo.launch(server_name="127.0.0.1", server_port=8081)
+    demo.launch(server_name="127.0.0.1", server_port=8081, share=False, theme=gr.themes.Soft(primary_hue="indigo", neutral_hue="slate"), css="footer {display:none !important}")
