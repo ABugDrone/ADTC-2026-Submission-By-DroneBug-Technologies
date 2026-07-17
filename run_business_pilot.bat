@@ -20,9 +20,9 @@ for /f "tokens=5" %%a in ('netstat -ano ^| find ":%LLAMA_PORT%" ^| find "LISTENI
 for /f "tokens=5" %%a in ('netstat -ano ^| find ":%APP_PORT%" ^| find "LISTENING" 2^>nul') do taskkill /f /pid %%a >nul 2>&1
 timeout /t 1 /nobreak >nul
 
-:: --- 1. Start llama.cpp + Qwen model server ---
+:: --- 1. Start llama.cpp + Tiny Aya Earth model server ---
 echo %ESC%[33m[1/2]%ESC%[0m Starting local AI model...
-echo       llama-server with Qwen2.5-1.5B-Instruct Q4_K_M on port %LLAMA_PORT%
+echo       llama-server with tiny-aya-earth Q4_K_M on port %LLAMA_PORT%
 start "BusinessPilot-LlamaServer" /min "%ROOT%\start_llama_server.bat"
 
 set "WAIT=0"
@@ -45,9 +45,9 @@ if errorlevel 1 (
 echo.
 echo %ESC%[32m      Model server is up on port %LLAMA_PORT%.%ESC%[0m
 
-:: --- 2. Start the Streamlit app ---
+:: --- 2. Start the Gradio app ---
 echo %ESC%[33m[2/2]%ESC%[0m Starting BusinessPilot app...
-echo       Streamlit dashboard on port %APP_PORT%
+echo       Gradio dashboard on port %APP_PORT%
 start "BusinessPilot-App" /min "%ROOT%\run_app.bat"
 
 set "WAIT=0"
@@ -70,7 +70,7 @@ if errorlevel 1 (
 echo.
 echo %ESC%[32m      App is up on port %APP_PORT%.%ESC%[0m
 
-:: --- 3. Open browser to Streamlit ---
+:: --- 3. Open browser to Gradio ---
 echo %ESC%[33m[3/3]%ESC%[0m Opening browser...
 start "" "http://localhost:%APP_PORT%"
 

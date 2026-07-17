@@ -19,7 +19,7 @@ documents/chats/
 .DS_Store
 Thumbs.db
 
-# Streamlit
+# Gradio / Streamlit (legacy)
 .streamlit/
 
 # Local profiler output

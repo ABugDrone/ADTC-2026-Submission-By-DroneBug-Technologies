@@ -31,7 +31,7 @@ async def _chat_async(
     client: Optional[httpx.AsyncClient] = None,
 ) -> ChatResult:
     payload = {
-        "model": "qwen",
+        "model": "tiny-aya-earth",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
