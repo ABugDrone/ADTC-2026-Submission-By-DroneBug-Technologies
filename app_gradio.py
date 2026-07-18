@@ -1,6 +1,10 @@
 import datetime
 import os
 
+# Disable ALL telemetry before importing gradio
+os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
+os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+
 import pandas as pd
 import plotly.express as px
 import gradio as gr
@@ -50,12 +54,31 @@ def home_page():
     status_model = _check_model()
     status_embed = _check_embed()
     status_kb = _check_kb()
+    model_status_class = "status-connected" if status_model == "Connected" else "status-disconnected"
+    embed_status_class = "status-connected" if "dim" in status_embed else "status-disconnected"
+    kb_status_class = "status-connected" if "chunk" in status_kb else "status-disconnected"
     return (
-        f"### System Status\n\n"
-        f"- **Chat model**: {config.LLAMA_HOST} — {status_model}\n"
-        f"- **Embedding**: {status_embed}\n"
-        f"- **Knowledge base**: {status_kb}\n\n"
-        "Your offline AI workspace — nothing here leaves this machine."
+        f"<div class='card'>"
+        f"<h2 style='color: #3b82f6; margin-bottom: 1rem;'>🚀 BusinessPilot AI Dashboard</h2>"
+        f"<div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;'>"
+        f"<div style='background: rgba(51, 65, 85, 0.8); padding: 1rem; border-radius: 8px;'>"
+        f"<h3 style='color: #94a3b8; margin-bottom: 0.5rem;'>Chat Model</h3>"
+        f"<p style='color: #e2e8f0; margin-bottom: 0.5rem;'>{config.LLAMA_HOST}</p>"
+        f"<span class='{model_status_class}' style='font-weight: 600;'>{status_model}</span>"
+        f"</div>"
+        f"<div style='background: rgba(51, 65, 85, 0.8); padding: 1rem; border-radius: 8px;'>"
+        f"<h3 style='color: #94a3b8; margin-bottom: 0.5rem;'>Embedding</h3>"
+        f"<span class='{embed_status_class}' style='font-weight: 600;'>{status_embed}</span>"
+        f"</div>"
+        f"<div style='background: rgba(51, 65, 85, 0.8); padding: 1rem; border-radius: 8px;'>"
+        f"<h3 style='color: #94a3b8; margin-bottom: 0.5rem;'>Knowledge Base</h3>"
+        f"<span class='{kb_status_class}' style='font-weight: 600;'>{status_kb}</span>"
+        f"</div>"
+        f"</div>"
+        f"<div style='margin-top: 1.5rem; padding: 1rem; background: rgba(15, 23, 42, 0.5); border-radius: 8px;'>"
+        f"<p style='color: #94a3b8; margin: 0;'>💡 Your offline AI workspace — nothing here leaves this machine.</p>"
+        f"</div>"
+        f"</div>"
     )
 
 doc_state = gr.State(None)
@@ -165,7 +188,9 @@ def save_chat_on_message(history, chat_id, chat_title):
     if not chat_id:
         chat_id = chat_store.new_chat_id()
     if not chat_title:
-        chat_title = history[0][0][:50] + ("..." if len(history[0][0]) > 50 else "")
+        # Gradio 6: extract first user message content
+        first_msg = next((m.get("content", "") for m in history if m.get("role") == "user"), "")
+        chat_title = first_msg[:50] + ("..." if len(first_msg) > 50 else "")
     chat_store.save_chat(chat_id, chat_title, history)
     return chat_id, chat_title
 
@@ -181,7 +206,15 @@ def load_chat_by_id(chat_id):
     if data:
         msgs = data.get("messages", [])
         title = data.get("title", "Untitled")
-        return msgs, title, chat_id
+        # Convert old tuple format to new messages format for Gradio 6
+        converted = []
+        for m in msgs:
+            if isinstance(m, dict) and "role" in m:
+                converted.append(m)
+            elif isinstance(m, (list, tuple)) and len(m) == 2:
+                converted.append({"role": "user", "content": str(m[0])})
+                converted.append({"role": "assistant", "content": str(m[1])})
+        return converted, title, chat_id
     return [], "", ""
 
 def delete_chat_by_id(chat_id):
@@ -201,10 +234,11 @@ def finance_calc(revenue, cogs, opex, currency_name):
     })
     fig = px.bar(
         cost_df, x="Amount", y="Category", orientation="h", color="Category",
-        color_discrete_map={"COGS": "#EF4444", "OpEx": "#F59E0B", "Gross Profit": "#10B981"},
+        color_discrete_map={"COGS": "#ef4444", "OpEx": "#f59e0b", "Gross Profit": "#10b981"},
         template="plotly_dark",
     )
-    fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", showlegend=False)
+    fig.update_layout(margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor="#1e293b", plot_bgcolor="#0f172a", showlegend=False,
+                      font=dict(color="#e2e8f0", family="Segoe UI, Arial, sans-serif"))
     summary = (
         f"**Revenue**: {sym}{metrics['revenue']:,}\n"
         f"**Gross Profit**: {sym}{metrics['gross_profit']:,} ({metrics['gross_margin']:.1f}%)\n"
@@ -252,28 +286,30 @@ def data_build_chart(x, y, chart_type, df):
     if df is None:
         return None
     template = "plotly_dark"
+    color_seq = ["#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"]
     if chart_type == "Bar":
-        fig = px.bar(df, x=x, y=y, template=template)
+        fig = px.bar(df, x=x, y=y, template=template, color_discrete_sequence=color_seq)
     elif chart_type == "Line":
-        fig = px.line(df, x=x, y=y, markers=True, template=template)
+        fig = px.line(df, x=x, y=y, markers=True, template=template, color_discrete_sequence=color_seq)
     elif chart_type == "Scatter":
-        fig = px.scatter(df, x=x, y=y, template=template)
+        fig = px.scatter(df, x=x, y=y, template=template, color_discrete_sequence=color_seq)
     else:
         return None
-    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(paper_bgcolor="#1e293b", plot_bgcolor="#0f172a", font=dict(color="#e2e8f0", family="Segoe UI, Arial, sans-serif"))
     return fig
 
 def data_pie_chart(x, val, df):
     if df is None:
         return None
     template = "plotly_dark"
+    color_seq = ["#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"]
     if val == "Count":
         agg = df[x].value_counts().reset_index()
         agg.columns = [x, "count"]
-        fig = px.pie(agg, names=x, values="count", template=template)
+        fig = px.pie(agg, names=x, values="count", template=template, color_discrete_sequence=color_seq)
     else:
-        fig = px.pie(df, names=x, values=val, template=template)
-    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+        fig = px.pie(df, names=x, values=val, template=template, color_discrete_sequence=color_seq)
+    fig.update_layout(paper_bgcolor="#1e293b", plot_bgcolor="#0f172a", font=dict(color="#e2e8f0", family="Segoe UI, Arial, sans-serif"))
     return fig
 
 def data_qa_csv(question, csv_context, csv_name, lang):
@@ -408,40 +444,310 @@ def clear_completed_tasks():
     TaskManager.clear_completed()
     return "Completed tasks cleared."
 
+CUSTOM_THEME = gr.themes.Soft(primary_hue="blue", neutral_hue="slate")
+
+CUSTOM_CSS = """
+* { font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif !important; }
+
+.gradio-container {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
+    min-height: 100vh !important;
+    max-width: 100% !important;
+}
+
+.gradio-container > .main > div:first-child {
+    text-align: center;
+    padding: 2rem 1rem !important;
+    margin-bottom: 1.5rem !important;
+    background: rgba(15, 23, 42, 0.8) !important;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.3) !important;
+    border-radius: 12px !important;
+}
+
+.gradio-container > .main > div:first-child h1 {
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.gradio-container > .main > div:first-child p {
+    color: #94a3b8 !important;
+    font-size: 1.1rem !important;
+    margin-top: 0.5rem !important;
+}
+
+/* Tab styling */
+.tabs {
+    background: transparent !important;
+    border: none !important;
+}
+
+.tab-item {
+    background: rgba(30, 41, 59, 0.8) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    margin: 0 4px !important;
+    padding: 10px 20px !important;
+    transition: all 0.2s ease !important;
+}
+
+.tab-item:hover {
+    background: rgba(59, 130, 246, 0.15) !important;
+    color: #60a5fa !important;
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    transform: translateY(-2px) !important;
+}
+
+.tab-item.selected {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+    color: white !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* Cards for sections */
+.card {
+    background: rgba(30, 41, 59, 0.95) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    border-radius: 12px !important;
+    padding: 1.5rem !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+/* Buttons */
+button.primary {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 10px 20px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+button.primary:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5) !important;
+}
+
+button.secondary {
+    background: rgba(51, 65, 85, 0.8) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    color: #cbd5e1 !important;
+}
+
+button.secondary:hover {
+    background: rgba(59, 130, 246, 0.2) !important;
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    color: #60a5fa !important;
+}
+
+button.stop {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}
+
+/* Inputs */
+input, textarea, select {
+    background: rgba(30, 41, 59, 0.9) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    border-radius: 10px !important;
+    color: #e2e8f0 !important;
+    transition: all 0.2s ease !important;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+label {
+    color: #94a3b8 !important;
+    font-weight: 500 !important;
+}
+
+/* Chatbot */
+.chatbot {
+    background: rgba(30, 41, 59, 0.95) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+.chatbot .message {
+    padding: 1rem !important;
+    border-radius: 10px !important;
+    margin: 0.5rem !important;
+}
+
+.chatbot .message.user {
+    background: rgba(59, 130, 246, 0.15) !important;
+    border-left: 3px solid #3b82f6 !important;
+}
+
+.chatbot .message.bot {
+    background: rgba(139, 92, 246, 0.15) !important;
+    border-left: 3px solid #8b5cf6 !important;
+}
+
+/* Status indicators */
+.status-connected {
+    color: #22c55e !important;
+    font-weight: 600 !important;
+}
+
+.status-disconnected {
+    color: #ef4444 !important;
+    font-weight: 600 !important;
+}
+
+/* Accordion */
+.accordion {
+    background: rgba(30, 41, 59, 0.9) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    border-radius: 10px !important;
+    margin: 0.5rem 0 !important;
+}
+
+.accordion-header {
+    background: rgba(51, 65, 85, 0.8) !important;
+    color: #e2e8f0 !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+}
+
+/* File upload */
+.file-upload {
+    background: rgba(30, 41, 59, 0.9) !important;
+    border: 2px dashed rgba(59, 130, 246, 0.3) !important;
+    border-radius: 12px !important;
+    padding: 2rem !important;
+    text-align: center !important;
+    transition: all 0.2s ease !important;
+}
+
+.file-upload:hover {
+    border-color: #3b82f6 !important;
+    background: rgba(59, 130, 246, 0.05) !important;
+}
+
+/* Dataframe */
+.dataframe {
+    background: rgba(30, 41, 59, 0.95) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    border-radius: 10px !important;
+}
+
+.dataframe th {
+    background: rgba(51, 65, 85, 0.8) !important;
+    color: #e2e8f0 !important;
+    font-weight: 600 !important;
+}
+
+.dataframe td {
+    color: #cbd5e1 !important;
+}
+
+/* Markdown */
+markdown {
+    color: #e2e8f0 !important;
+}
+
+markdown h1, markdown h2, markdown h3, markdown h4 {
+    color: #3b82f6 !important;
+    font-weight: 700 !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+markdown ul, markdown ol {
+    padding-left: 1.5rem !important;
+    color: #cbd5e1 !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.5) !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.4) !important;
+    border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.6) !important;
+}
+
+/* Hide Gradio footer */
+footer {
+    display: none !important;
+}
+
+/* Language radio */
+.radio {
+    background: rgba(30, 41, 59, 0.9) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    border-radius: 10px !important;
+    padding: 0.75rem !important;
+}
+
+/* Section headers */
+.section-header {
+    color: #3b82f6 !important;
+    font-weight: 700 !important;
+    font-size: 1.3rem !important;
+    margin-bottom: 1rem !important;
+    padding-bottom: 0.5rem !important;
+    border-bottom: 2px solid rgba(59, 130, 246, 0.2) !important;
+}
+"""
+
 with gr.Blocks(title="BusinessPilot AI") as demo:
     gr.Markdown("# BusinessPilot AI  \nYour offline AI workspace — nothing here leaves this machine.")
-    lang_selector = gr.Radio(["English", "Hausa"], value="English", label="Language", info="Switch between English and Hausa")
+    lang_selector = gr.Radio(["English", "Hausa"], value="English", label="Language", info="🌍 Switch between English and Hausa")
 
     with gr.Tabs():
         with gr.TabItem("Home"):
-            status_btn = gr.Button("Refresh Status")
+            status_btn = gr.Button("🔄 Refresh Status", variant="primary")
             status_output = gr.Markdown()
             status_btn.click(fn=home_page, outputs=status_output)
             demo.load(fn=home_page, outputs=status_output)
 
-        with gr.TabItem("Meetings & Tasks"):
-            gr.Markdown("### Schedule Event / Task")
+        with gr.TabItem("📅 Meetings & Tasks"):
+            gr.Markdown('<p class="section-header">Schedule Event / Task</p>')
             with gr.Row():
                 with gr.Column(scale=1):
                     task_title = gr.Textbox(label="Title", placeholder="e.g., Board Meeting")
                     task_dt = gr.DateTime(label="Date & Time", include_time=True, type="string")
                     task_priority = gr.Dropdown(["High", "Medium", "Low"], value="Medium", label="Priority")
-                    task_add_btn = gr.Button("Save & Notify", variant="primary")
+                    task_add_btn = gr.Button("💾 Save & Notify", variant="primary")
                     task_result = gr.Markdown()
                 with gr.Column(scale=2):
-                    gr.Markdown("### Current Agenda")
+                    gr.Markdown('<p class="section-header">Current Agenda</p>')
                     task_list = gr.Markdown()
-                    refresh_tasks_btn = gr.Button("Refresh Tasks")
+                    refresh_tasks_btn = gr.Button("🔄 Refresh Tasks")
                     with gr.Row():
                         edit_idx = gr.Number(label="Edit Index", precision=0)
                         edit_title = gr.Textbox(label="New Title")
                         edit_priority = gr.Dropdown(["High", "Medium", "Low"], value="Medium", label="New Priority")
-                    edit_btn = gr.Button("Update Task")
-                    delete_btn = gr.Button("Delete Task", variant="stop")
-                    clear_done_btn = gr.Button("Clear Completed")
+                    edit_btn = gr.Button("✏️ Update Task")
+                    delete_btn = gr.Button("🗑️ Delete Task", variant="stop")
+                    clear_done_btn = gr.Button("🧹 Clear Completed")
 
-            gr.Markdown("### AI Prioritization")
-            ai_prio_btn = gr.Button("Re-Prioritize with AI")
+            gr.Markdown('<p class="section-header">AI Prioritization</p>')
+            ai_prio_btn = gr.Button("🧠 Re-Prioritize with AI", variant="primary")
             with gr.Row():
                 prio_result = gr.Markdown(label="Recommendation")
                 risk_result = gr.Markdown(label="Risk Flag")
@@ -454,18 +760,19 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
             clear_done_btn.click(fn=clear_completed_tasks, outputs=task_result).then(fn=list_tasks, outputs=task_list)
             demo.load(fn=list_tasks, outputs=task_list)
 
-        with gr.TabItem("Chat & Knowledge Base"):
+        with gr.TabItem("💬 Chat & Knowledge Base"):
             with gr.Row():
                 with gr.Column(scale=1):
-                    gr.Markdown("### Upload Document")
+                    gr.Markdown('<p class="section-header">Upload Document</p>')
                     doc_upload = gr.File(label="Upload file", file_types=[".txt", ".md", ".csv", ".pdf", ".docx", ".xlsx", ".pptx", ".jpg", ".jpeg", ".png", ".json", ".xml"])
                     doc_status = gr.Markdown()
                     with gr.Row():
-                        doc_convert_btn = gr.Button("Convert to Markdown")
-                        doc_index_btn = gr.Button("Add to KB")
-                        doc_summarize_btn = gr.Button("Summarize & Index")
-                        doc_classify_btn = gr.Button("Classify")
-                        doc_clear_btn = gr.Button("Clear")
+                        doc_convert_btn = gr.Button("📝 Convert to MD")
+                        doc_index_btn = gr.Button("📚 Add to KB")
+                    with gr.Row():
+                        doc_summarize_btn = gr.Button("📋 Summarize & Index")
+                        doc_classify_btn = gr.Button("🏷️ Classify")
+                        doc_clear_btn = gr.Button("❌ Clear")
                     doc_classify_out = gr.Markdown()
                     doc_convert_status = gr.Markdown()
                     doc_index_status = gr.Markdown()
@@ -473,20 +780,22 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
                         doc_preview = gr.TextArea(label="", lines=10)
                     with gr.Accordion("Knowledge Base", open=False):
                         kb_content = gr.Markdown()
-                        kb_refresh_btn = gr.Button("Refresh KB")
+                        kb_refresh_btn = gr.Button("🔄 Refresh KB")
                         kb_delete_name = gr.Textbox(label="Delete doc by name")
-                        kb_delete_btn = gr.Button("Delete")
+                        kb_delete_btn = gr.Button("🗑️ Delete")
                 with gr.Column(scale=2):
-                    gr.Markdown("### Chat with Knowledge Base")
-                    rag_chatbot = gr.Chatbot(height=400)
-                    rag_msg = gr.Textbox(label="Message", placeholder="Ask about the uploaded document, your knowledge base, or anything else...")
-                    rag_send_btn = gr.Button("Send", variant="primary")
-                    rag_new_btn = gr.Button("New Chat")
+                    gr.Markdown('<p class="section-header">Chat with Knowledge Base</p>')
+                    rag_chatbot = gr.Chatbot(height=450)
+                    rag_msg = gr.Textbox(label="Message", placeholder="🔍 Ask about your documents, knowledge base, or anything else...")
+                    with gr.Row():
+                        rag_send_btn = gr.Button("📤 Send", variant="primary")
+                        rag_new_btn = gr.Button("✨ New Chat")
                     with gr.Accordion("Saved Chats", open=False):
                         saved_chats_dd = gr.Dropdown(label="Select chat", choices=[], interactive=True)
-                        saved_chats_refresh = gr.Button("Refresh list")
-                        saved_chat_load_btn = gr.Button("Load selected")
-                        saved_chat_del_btn = gr.Button("Delete selected")
+                        with gr.Row():
+                            saved_chats_refresh = gr.Button("🔄 Refresh")
+                            saved_chat_load_btn = gr.Button("📂 Load")
+                            saved_chat_del_btn = gr.Button("🗑️ Delete")
 
             doc_upload.change(fn=upload_doc, inputs=[doc_upload, doc_state, doc_name_state, doc_text_state, rag_log_state], outputs=[doc_state, doc_name_state, doc_text_state, rag_log_state, doc_status])
             doc_convert_btn.click(fn=convert_doc, inputs=[doc_state, doc_name_state, doc_text_state], outputs=[doc_text_state, doc_convert_status]).then(fn=lambda t: t, inputs=[doc_text_state], outputs=[doc_preview])
@@ -501,9 +810,10 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
                 if history is None:
                     history = []
                 history = list(history)
-                history.append([msg, None])
+                # Gradio 6: messages format with {role, content}
+                history.append({"role": "user", "content": msg})
                 reply = chat_with_rag(msg, history, lang_selector.value, doc_text_state.value, doc_name_state.value, rag_log_state.value)
-                history[-1][1] = reply
+                history.append({"role": "assistant", "content": reply})
                 cid, ctitle = save_chat_on_message(history, chat_id_state.value, chat_title_state.value)
                 return history, "", cid, ctitle
 
@@ -515,41 +825,54 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
             saved_chat_load_btn.click(fn=load_chat_by_id, inputs=[saved_chats_dd], outputs=[rag_chatbot, chat_title_state, chat_id_state])
             saved_chat_del_btn.click(fn=delete_chat_by_id, inputs=[saved_chats_dd], outputs=[rag_chatbot, chat_title_state, chat_id_state])
 
-        with gr.TabItem("Data & Charts"):
-            gr.Markdown("### CSV Data Explorer")
+        with gr.TabItem("📊 Data & Charts"):
+            gr.Markdown('<p class="section-header">CSV Data Explorer</p>')
             csv_file = gr.File(label="Upload CSV", file_types=[".csv"])
+            csv_show_all_btn = gr.Button("📋 Show All Data")
             csv_preview_table = gr.DataFrame(label="Preview", interactive=False)
             csv_info = gr.Markdown()
 
-            gr.Markdown("### Ask the AI about this data")
-            csv_goal = gr.Textbox(label="What do you want to know?", placeholder="e.g., sales trend, top product...")
-            csv_analyze_btn = gr.Button("Analyze")
+            gr.Markdown('<p class="section-header">Ask the AI about this data</p>')
+            csv_goal = gr.Textbox(label="What do you want to know?", placeholder="🔍 e.g., sales trend, top product...")
+            csv_analyze_btn = gr.Button("🧠 Analyze", variant="primary")
             csv_insight = gr.Markdown()
 
-            gr.Markdown("### Build a chart")
+            gr.Markdown('<p class="section-header">Build a Chart</p>')
             with gr.Row():
                 csv_x = gr.Dropdown(label="X axis", choices=[], interactive=True)
                 csv_y = gr.Dropdown(label="Y axis", choices=[], interactive=True)
                 csv_chart_type = gr.Dropdown(["Bar", "Line", "Scatter", "Pie"], value="Bar", label="Chart type")
                 csv_pie_val = gr.Dropdown(label="Values (Pie)", choices=[], interactive=True)
+
+            csv_build_btn = gr.Button("📊 Build Chart", variant="primary")
             csv_chart = gr.Plot(label="Chart")
 
-            gr.Markdown("### Ask About This Data")
-            csv_qa_input = gr.Textbox(label="Question", placeholder="Ask anything about this data...")
-            csv_qa_btn = gr.Button("Ask")
+            gr.Markdown('<p class="section-header">Ask About This Data (English/Hausa)</p>')
+            csv_qa_input = gr.Textbox(label="Question", placeholder="💬 Ask anything about this data...")
+            csv_qa_btn = gr.Button("🗣️ Ask")
             csv_qa_out = gr.Markdown()
 
-            gr.Markdown("### Index to Knowledge Base")
-            csv_index_btn = gr.Button("Index this dataset")
+            gr.Markdown('<p class="section-header">Index to Knowledge Base</p>')
+            csv_index_btn = gr.Button("📚 Index this dataset")
             csv_index_status = gr.Markdown()
 
             def csv_upload_handler(file):
-                df, ctx, name, preview, info = data_preview(file)
+                if file is None:
+                    return None, "", "", None, "", [], [], []
+                df = DataAnalyzer.read_csv(file)
+                ctx = DataAnalyzer(df).rich_context(20)
                 cols = list(df.columns) if df is not None else []
                 num_cols = df.select_dtypes(include=["number"]).columns.tolist() if df is not None else []
-                return df, ctx, name, preview, info, gr.Dropdown(choices=cols), gr.Dropdown(choices=num_cols), gr.Dropdown(choices=["Count"] + num_cols)
+                return df, ctx, os.path.basename(file), df.head(12), f"Shape: {df.shape[0]} rows x {df.shape[1]} columns", gr.Dropdown(choices=cols), gr.Dropdown(choices=num_cols), gr.Dropdown(choices=["Count"] + num_cols)
 
             csv_file.change(fn=csv_upload_handler, inputs=[csv_file], outputs=[csv_df_state, csv_context_state, csv_name_state, csv_preview_table, csv_info, csv_x, csv_y, csv_pie_val])
+
+            def csv_show_all(df):
+                if df is None:
+                    return None
+                return df
+
+            csv_show_all_btn.click(fn=csv_show_all, inputs=[csv_df_state], outputs=csv_preview_table)
 
             csv_analyze_btn.click(fn=data_analyze_csv, inputs=[csv_goal, csv_context_state, csv_name_state, lang_selector], outputs=csv_insight)
 
@@ -558,35 +881,33 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
                     return data_pie_chart(x, pie_val, df)
                 return data_build_chart(x, y, chart_type, df)
 
+            csv_build_btn.click(fn=chart_handler, inputs=[csv_x, csv_y, csv_chart_type, csv_pie_val, csv_df_state], outputs=csv_chart)
             csv_chart_type.change(fn=chart_handler, inputs=[csv_x, csv_y, csv_chart_type, csv_pie_val, csv_df_state], outputs=csv_chart)
-            csv_x.change(fn=chart_handler, inputs=[csv_x, csv_y, csv_chart_type, csv_pie_val, csv_df_state], outputs=csv_chart)
-            csv_y.change(fn=chart_handler, inputs=[csv_x, csv_y, csv_chart_type, csv_pie_val, csv_df_state], outputs=csv_chart)
-            csv_pie_val.change(fn=chart_handler, inputs=[csv_x, csv_y, csv_chart_type, csv_pie_val, csv_df_state], outputs=csv_chart)
 
             csv_qa_btn.click(fn=data_qa_csv, inputs=[csv_qa_input, csv_context_state, csv_name_state, lang_selector], outputs=csv_qa_out)
             csv_index_btn.click(fn=data_index_csv, inputs=[csv_name_state, csv_df_state, csv_rag_log_state], outputs=[csv_rag_log_state, csv_index_status])
 
-        with gr.TabItem("Financial Analyst"):
-            gr.Markdown("### Financial Analyst")
-            fin_cur = gr.Dropdown(list(AFRICAN_CURRENCIES.keys()), value="Nigerian Naira", label="Currency")
+        with gr.TabItem("💰 Financial Analyst"):
+            gr.Markdown('<p class="section-header">Financial Analyst</p>')
+            fin_cur = gr.Dropdown(list(AFRICAN_CURRENCIES.keys()), value="Nigerian Naira", label="🌍 Currency")
             with gr.Row():
                 with gr.Column():
-                    gr.Markdown("#### Enter Figures")
+                    gr.Markdown('<p class="section-header">Enter Figures</p>')
                     fin_revenue = gr.Number(label="Revenue", value=100000, step=10000)
                     fin_cogs = gr.Number(label="COGS", value=40000, step=5000)
                     fin_opex = gr.Number(label="OpEx", value=30000, step=5000)
-                    fin_calc_btn = gr.Button("Calculate", variant="primary")
+                    fin_calc_btn = gr.Button("🧮 Calculate", variant="primary")
                 with gr.Column():
-                    gr.Markdown("#### Key Metrics")
+                    gr.Markdown('<p class="section-header">Key Metrics</p>')
                     fin_metrics = gr.Markdown()
                     fin_chart = gr.Plot(label="Cost Breakdown")
 
-            fin_cfo_btn = gr.Button("Generate CFO Summary")
+            fin_cfo_btn = gr.Button("📊 Generate CFO Summary", variant="primary")
             fin_cfo_out = gr.Markdown()
 
-            gr.Markdown("#### Finance Chat")
+            gr.Markdown('<p class="section-header">Finance Chat (English/Hausa)</p>')
             fin_chat_input = gr.Textbox(label="Ask about finance, budgeting, or investments...")
-            fin_chat_send = gr.Button("Ask")
+            fin_chat_send = gr.Button("💬 Ask")
             fin_chat_out = gr.Markdown()
 
             fin_calc_btn.click(fn=finance_calc, inputs=[fin_revenue, fin_cogs, fin_opex, fin_cur], outputs=[fin_metrics, fin_chart])
@@ -596,4 +917,10 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
             demo.load(fn=finance_calc, inputs=[fin_revenue, fin_cogs, fin_opex, fin_cur], outputs=[fin_metrics, fin_chart])
 
 if __name__ == "__main__":
-    demo.launch(server_name="127.0.0.1", server_port=8081, share=False, theme=gr.themes.Soft(primary_hue="indigo", neutral_hue="slate"), css="footer {display:none !important}")
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=8081,
+        share=False,
+        theme=CUSTOM_THEME,
+        css=CUSTOM_CSS,
+    )
