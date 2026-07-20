@@ -1,8 +1,21 @@
+# Core UI
 gradio>=5.0.0
+
+# Data processing
 pandas
-plotly
-httpx
-plyer
-sqlite-vec
 numpy
 
+# Charts
+plotly
+
+# HTTP client (local llama.cpp only — no external APIs)
+httpx
+
+# Windows notifications (offline)
+plyer
+
+# Local vector search (offline)
+sqlite-vec
+
+# Document conversion (offline)
+markitdown

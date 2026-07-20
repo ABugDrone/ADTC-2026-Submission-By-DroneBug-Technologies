@@ -54,32 +54,55 @@ def home_page():
     status_model = _check_model()
     status_embed = _check_embed()
     status_kb = _check_kb()
-    model_status_class = "status-connected" if status_model == "Connected" else "status-disconnected"
-    embed_status_class = "status-connected" if "dim" in status_embed else "status-disconnected"
-    kb_status_class = "status-connected" if "chunk" in status_kb else "status-disconnected"
-    return (
-        f"<div class='card'>"
-        f"<h2 style='color: #3b82f6; margin-bottom: 1rem;'>🚀 BusinessPilot AI Dashboard</h2>"
-        f"<div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;'>"
-        f"<div style='background: rgba(51, 65, 85, 0.8); padding: 1rem; border-radius: 8px;'>"
-        f"<h3 style='color: #94a3b8; margin-bottom: 0.5rem;'>Chat Model</h3>"
-        f"<p style='color: #e2e8f0; margin-bottom: 0.5rem;'>{config.LLAMA_HOST}</p>"
-        f"<span class='{model_status_class}' style='font-weight: 600;'>{status_model}</span>"
-        f"</div>"
-        f"<div style='background: rgba(51, 65, 85, 0.8); padding: 1rem; border-radius: 8px;'>"
-        f"<h3 style='color: #94a3b8; margin-bottom: 0.5rem;'>Embedding</h3>"
-        f"<span class='{embed_status_class}' style='font-weight: 600;'>{status_embed}</span>"
-        f"</div>"
-        f"<div style='background: rgba(51, 65, 85, 0.8); padding: 1rem; border-radius: 8px;'>"
-        f"<h3 style='color: #94a3b8; margin-bottom: 0.5rem;'>Knowledge Base</h3>"
-        f"<span class='{kb_status_class}' style='font-weight: 600;'>{status_kb}</span>"
-        f"</div>"
-        f"</div>"
-        f"<div style='margin-top: 1.5rem; padding: 1rem; background: rgba(15, 23, 42, 0.5); border-radius: 8px;'>"
-        f"<p style='color: #94a3b8; margin: 0;'>💡 Your offline AI workspace — nothing here leaves this machine.</p>"
-        f"</div>"
-        f"</div>"
+
+    def _badge(ok, label):
+        color = "#166534" if ok else "#DC2626"
+        bg = "#DCFCE7" if ok else "#FEE2E2"
+        return f"<span style='font-size:11px;font-weight:600;color:{color};background:{bg};padding:3px 8px;border-radius:999px;'>{label}</span>"
+
+    cards = (
+        f"<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;'>"
+        f"<div style='background:rgba(255,255,255,0.9);border:1px solid #E4E7EB;border-radius:12px;padding:14px;'>"
+        f"<p style='font-size:13px;font-weight:500;margin:0 0 4px;'>Chat model</p>"
+        f"<p style='font-size:12px;color:#5B6470;margin:0 0 10px;'>{config.LLAMA_HOST}</p>"
+        f"{_badge(status_model=='Connected', status_model)}</div>"
+        f"<div style='background:rgba(255,255,255,0.9);border:1px solid #E4E7EB;border-radius:12px;padding:14px;'>"
+        f"<p style='font-size:13px;font-weight:500;margin:0 0 4px;'>Embedding model</p>"
+        f"<p style='font-size:12px;color:#5B6470;margin:0 0 10px;'>{config.LLAMA_HOST}</p>"
+        f"{_badge('dim' in status_embed, status_embed)}</div>"
+        f"<div style='background:rgba(255,255,255,0.9);border:1px solid #E4E7EB;border-radius:12px;padding:14px;'>"
+        f"<p style='font-size:13px;font-weight:500;margin:0 0 4px;'>Knowledge base</p>"
+        f"<p style='font-size:12px;color:#5B6470;margin:0 0 10px;'>sqlite-vec, local file</p>"
+        f"{_badge('chunk' in status_kb, status_kb)}</div></div>"
     )
+
+    tasks = TaskManager.get_all()
+    pri_colors = {"High": "#DC2626", "Medium": "#D97706", "Low": "#16A34A"}
+    items = ""
+    for t in tasks[:20]:
+        pri = t.get("priority", "Medium")
+        pc = pri_colors.get(pri, "#5B6470")
+        icon = "✅" if t.get("status") == "Completed" else "⏳"
+        items += (
+            f"<div style='display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid #E4E7EB;border-radius:8px;margin-bottom:6px;'>"
+            f"<div><p style='font-size:13px;margin:0;'>{icon} {t['title']}</p>"
+            f"<p style='font-size:11px;margin:0;color:#5B6470;'>{t.get('date','')} {t.get('time','')}</p></div>"
+            f"<span style='font-size:11px;font-weight:600;color:#fff;background:{pc};padding:3px 10px;border-radius:999px;'>{pri}</span></div>"
+        )
+    if not items:
+        items = "<p style='font-size:13px;color:#5B6470;margin:0;'>No tasks scheduled yet.</p>"
+
+    agenda = (
+        f"<div style='background:rgba(255,255,255,0.9);border:1px solid #E4E7EB;border-radius:12px;padding:14px;'>"
+        f"<p style='font-size:13px;font-weight:500;margin:0 0 10px;'>Todays agenda</p>"
+        f"<div style='max-height:300px;overflow-y:auto;'>{items}</div></div>"
+    )
+
+    footer = (
+        f"<p style='font-size:13px;color:#5B6470;margin:16px 0 0;'>Your offline AI workspace — nothing here leaves this machine.</p>"
+    )
+
+    return cards + agenda + footer
 
 doc_state = gr.State(None)
 doc_name_state = gr.State("")
@@ -90,10 +113,7 @@ chat_title_state = gr.State("")
 
 finance_messages_state = gr.State([])
 
-csv_df_state = gr.State(None)
-csv_name_state = gr.State("")
-csv_context_state = gr.State("")
-csv_rag_log_state = gr.State([])
+csv_meta_state = gr.State(None)  # {name, cols, num_cols, shape_row, shape_col, filepath}
 doc2_raw_state = gr.State(None)
 doc2_name_state = gr.State("")
 doc2_text_state = gr.State("")
@@ -121,8 +141,9 @@ def chat_with_rag(message, history, lang, doc_text, doc_name, rag_log):
 def upload_doc(file, doc_state, doc_name_state, doc_text_state, rag_log_state):
     if file is None:
         return doc_state, doc_name_state, doc_text_state, rag_log_state, ""
-    raw = open(file, "rb").read()
-    name = os.path.basename(file)
+    filepath = str(file)
+    raw = open(filepath, "rb").read()
+    name = os.path.basename(filepath)
     return raw, name, "", rag_log_state, f"Loaded: {name}"
 
 def convert_doc(doc_state, doc_name_state, doc_text_state):
@@ -267,72 +288,90 @@ def finance_chat(message, history, revenue, cogs, opex, currency_name, lang):
     result = ai_engine.query_model(ctx, _lang_system(lang) + f" You are a financial advisor for African businesses. Reference specific {sym} amounts.")
     return result.text if result.ok else result.error
 
-def data_preview(file):
-    if file is None:
-        return None, "", "", None, ""
-    df = DataAnalyzer.read_csv(file)
-    analyzer = DataAnalyzer(df)
-    ctx = analyzer.rich_context(20)
-    return df, ctx, os.path.basename(file), df.head(12), f"Shape: {df.shape[0]} rows x {df.shape[1]} columns"
+def _csv_to_markdown(filepath, name):
+    filepath = str(filepath)
+    df = DataAnalyzer.read_csv(filepath)
+    md = f"DATASET: {name}\n\n"
+    md += f"Shape: {df.shape[0]} rows x {df.shape[1]} columns\n\n"
+    md += "## Columns\n"
+    for c in df.columns:
+        md += f"- **{c}**: {df[c].dtype}"
+        if pd.api.types.is_numeric_dtype(df[c]):
+            md += f" (min={df[c].min()}, max={df[c].max()}, mean={df[c].mean():.2f})"
+        elif df[c].nunique() < 20:
+            md += f" (unique values: {', '.join(str(v) for v in df[c].unique()[:10])})"
+        else:
+            md += f" (unique={df[c].nunique()})"
+        md += "\n"
+    md += "\n## Sample rows (first 5)\n"
+    md += df.head(5).to_markdown(index=False)
+    md += "\n\n## Summary statistics\n"
+    try:
+        md += df.describe(include='all').to_markdown()
+    except Exception:
+        md += df.describe().to_markdown()
+    del df
+    return md
 
-def data_analyze_csv(goal, csv_context, csv_name, lang):
-    if not csv_context:
-        return "No dataset loaded."
-    prompt = DataAnalyzer.build_insight_prompt(csv_context, goal)
-    result = ai_engine.query_model(prompt, _lang_system(lang) + " You are a senior data scientist. Answer with specific numbers.")
+def csv_process_and_index(filepath):
+    filepath = str(filepath)
+    name = os.path.basename(filepath)
+    md = _csv_to_markdown(filepath, name)
+    result = db.add_document(name, md)
+    df = DataAnalyzer.read_csv(filepath)
+    cols = list(df.columns)
+    num_cols = df.select_dtypes(include=["number"]).columns.tolist()
+    shape = df.shape
+    del df
+    meta = {"name": name, "cols": cols, "num_cols": num_cols, "shape_row": shape[0], "shape_col": shape[1], "filepath": filepath}
+    msg = f"Auto-indexed **{name}** — {result['chunks']} chunks, {result['embedded']} vectors. Ask questions below."
+    return meta, msg
+
+def data_qa_csv(question, meta, lang):
+    if not meta:
+        return "No dataset loaded. Upload a CSV first."
+    rag_results = db.search(question)
+    context = ""
+    if rag_results:
+        context = "\n".join(f"[{r.source}] {r.content[:500]}" for r in rag_results[:2])
+    else:
+        context = f"Dataset: {meta['name']} ({meta['shape_row']} rows, {meta['shape_col']} cols, columns: {', '.join(meta['cols'])})"
+    prompt = f"{context}\n\nQuestion: {question}"
+    result = ai_engine.query_model(prompt, _lang_system(lang) + " You are a data analyst. Answer with specific numbers.")
     return result.text if result.ok else result.error
 
-def data_build_chart(x, y, chart_type, df):
-    if df is None:
+def data_build_chart(x, y, chart_type, pie_val, meta):
+    if not meta:
         return None
+    df = DataAnalyzer.read_csv(str(meta["filepath"]))
     template = "plotly_dark"
     color_seq = ["#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"]
-    if chart_type == "Bar":
+    if chart_type == "Pie":
+        if pie_val == "Count":
+            agg = df[x].value_counts().reset_index()
+            agg.columns = [x, "count"]
+            fig = px.pie(agg, names=x, values="count", template=template, color_discrete_sequence=color_seq)
+        else:
+            fig = px.pie(df, names=x, values=pie_val, template=template, color_discrete_sequence=color_seq)
+    elif chart_type == "Bar":
         fig = px.bar(df, x=x, y=y, template=template, color_discrete_sequence=color_seq)
     elif chart_type == "Line":
         fig = px.line(df, x=x, y=y, markers=True, template=template, color_discrete_sequence=color_seq)
     elif chart_type == "Scatter":
         fig = px.scatter(df, x=x, y=y, template=template, color_discrete_sequence=color_seq)
     else:
+        del df
         return None
     fig.update_layout(paper_bgcolor="#1e293b", plot_bgcolor="#0f172a", font=dict(color="#e2e8f0", family="Segoe UI, Arial, sans-serif"))
+    del df
     return fig
-
-def data_pie_chart(x, val, df):
-    if df is None:
-        return None
-    template = "plotly_dark"
-    color_seq = ["#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"]
-    if val == "Count":
-        agg = df[x].value_counts().reset_index()
-        agg.columns = [x, "count"]
-        fig = px.pie(agg, names=x, values="count", template=template, color_discrete_sequence=color_seq)
-    else:
-        fig = px.pie(df, names=x, values=val, template=template, color_discrete_sequence=color_seq)
-    fig.update_layout(paper_bgcolor="#1e293b", plot_bgcolor="#0f172a", font=dict(color="#e2e8f0", family="Segoe UI, Arial, sans-serif"))
-    return fig
-
-def data_qa_csv(question, csv_context, csv_name, lang):
-    if not csv_context:
-        return "No dataset loaded."
-    ctx = f"Dataset '{csv_name}':\n{csv_context}\n\nQuestion: {question}"
-    result = ai_engine.query_model(ctx, _lang_system(lang) + " You are a data analyst. Answer with specific numbers.")
-    return result.text if result.ok else result.error
-
-def data_index_csv(csv_name, df, csv_rag_log):
-    if df is None:
-        return csv_rag_log, "No dataset loaded."
-    md_desc = f"DATASET: {csv_name}\n\nColumns: {', '.join(df.columns)}\n\nPreview:\n{df.head(10).to_markdown()}\n\nStatistical Summary:\n{df.describe(include='all').to_markdown()}"
-    result = db.add_document(csv_name, md_desc)
-    msg = f"Indexed dataset **{csv_name}** — {result['chunks']} chunks ({result['embedded']} with vectors)"
-    new_log = list(csv_rag_log) + [msg]
-    return new_log, msg
 
 def doc2_upload(file, doc2_raw_state, doc2_name_state, doc2_text_state, doc2_rag_log_state):
     if file is None:
         return doc2_raw_state, doc2_name_state, doc2_text_state, doc2_rag_log_state, ""
-    raw = open(file, "rb").read()
-    name = os.path.basename(file)
+    filepath = str(file)
+    raw = open(filepath, "rb").read()
+    name = os.path.basename(filepath)
     return raw, name, "", doc2_rag_log_state, f"Loaded: {name}"
 
 def doc2_convert(doc2_raw_state, doc2_name_state):
@@ -828,14 +867,14 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
         with gr.TabItem("📊 Data & Charts"):
             gr.Markdown('<p class="section-header">CSV Data Explorer</p>')
             csv_file = gr.File(label="Upload CSV", file_types=[".csv"])
-            csv_show_all_btn = gr.Button("📋 Show All Data")
+            csv_status = gr.Markdown()
             csv_preview_table = gr.DataFrame(label="Preview", interactive=False)
             csv_info = gr.Markdown()
 
-            gr.Markdown('<p class="section-header">Ask the AI about this data</p>')
-            csv_goal = gr.Textbox(label="What do you want to know?", placeholder="🔍 e.g., sales trend, top product...")
-            csv_analyze_btn = gr.Button("🧠 Analyze", variant="primary")
-            csv_insight = gr.Markdown()
+            gr.Markdown('<p class="section-header">Ask About This Data (English/Hausa)</p>')
+            csv_qa_input = gr.Textbox(label="Question", placeholder="💬 Ask anything about this data...")
+            csv_qa_btn = gr.Button("🗣️ Ask", variant="primary")
+            csv_qa_out = gr.Markdown()
 
             gr.Markdown('<p class="section-header">Build a Chart</p>')
             with gr.Row():
@@ -843,49 +882,24 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
                 csv_y = gr.Dropdown(label="Y axis", choices=[], interactive=True)
                 csv_chart_type = gr.Dropdown(["Bar", "Line", "Scatter", "Pie"], value="Bar", label="Chart type")
                 csv_pie_val = gr.Dropdown(label="Values (Pie)", choices=[], interactive=True)
-
             csv_build_btn = gr.Button("📊 Build Chart", variant="primary")
             csv_chart = gr.Plot(label="Chart")
 
-            gr.Markdown('<p class="section-header">Ask About This Data (English/Hausa)</p>')
-            csv_qa_input = gr.Textbox(label="Question", placeholder="💬 Ask anything about this data...")
-            csv_qa_btn = gr.Button("🗣️ Ask")
-            csv_qa_out = gr.Markdown()
-
-            gr.Markdown('<p class="section-header">Index to Knowledge Base</p>')
-            csv_index_btn = gr.Button("📚 Index this dataset")
-            csv_index_status = gr.Markdown()
-
             def csv_upload_handler(file):
                 if file is None:
-                    return None, "", "", None, "", [], [], []
-                df = DataAnalyzer.read_csv(file)
-                ctx = DataAnalyzer(df).rich_context(20)
-                cols = list(df.columns) if df is not None else []
-                num_cols = df.select_dtypes(include=["number"]).columns.tolist() if df is not None else []
-                return df, ctx, os.path.basename(file), df.head(12), f"Shape: {df.shape[0]} rows x {df.shape[1]} columns", gr.Dropdown(choices=cols), gr.Dropdown(choices=num_cols), gr.Dropdown(choices=["Count"] + num_cols)
+                    return None, "", None, [], [], []
+                meta, msg = csv_process_and_index(file)
+                df = DataAnalyzer.read_csv(str(file))
+                preview = df.head(12)
+                info = f"Shape: {df.shape[0]} rows x {df.shape[1]} columns"
+                del df
+                return meta, meta["name"], preview, info, gr.Dropdown(choices=meta["cols"]), gr.Dropdown(choices=meta["num_cols"]), gr.Dropdown(choices=["Count"] + meta["num_cols"])
 
-            csv_file.change(fn=csv_upload_handler, inputs=[csv_file], outputs=[csv_df_state, csv_context_state, csv_name_state, csv_preview_table, csv_info, csv_x, csv_y, csv_pie_val])
+            csv_file.change(fn=csv_upload_handler, inputs=[csv_file], outputs=[csv_meta_state, csv_status, csv_preview_table, csv_info, csv_x, csv_y, csv_pie_val])
 
-            def csv_show_all(df):
-                if df is None:
-                    return None
-                return df
+            csv_qa_btn.click(fn=data_qa_csv, inputs=[csv_qa_input, csv_meta_state, lang_selector], outputs=csv_qa_out)
 
-            csv_show_all_btn.click(fn=csv_show_all, inputs=[csv_df_state], outputs=csv_preview_table)
-
-            csv_analyze_btn.click(fn=data_analyze_csv, inputs=[csv_goal, csv_context_state, csv_name_state, lang_selector], outputs=csv_insight)
-
-            def chart_handler(x, y, chart_type, pie_val, df):
-                if chart_type == "Pie":
-                    return data_pie_chart(x, pie_val, df)
-                return data_build_chart(x, y, chart_type, df)
-
-            csv_build_btn.click(fn=chart_handler, inputs=[csv_x, csv_y, csv_chart_type, csv_pie_val, csv_df_state], outputs=csv_chart)
-            csv_chart_type.change(fn=chart_handler, inputs=[csv_x, csv_y, csv_chart_type, csv_pie_val, csv_df_state], outputs=csv_chart)
-
-            csv_qa_btn.click(fn=data_qa_csv, inputs=[csv_qa_input, csv_context_state, csv_name_state, lang_selector], outputs=csv_qa_out)
-            csv_index_btn.click(fn=data_index_csv, inputs=[csv_name_state, csv_df_state, csv_rag_log_state], outputs=[csv_rag_log_state, csv_index_status])
+            csv_build_btn.click(fn=data_build_chart, inputs=[csv_x, csv_y, csv_chart_type, csv_pie_val, csv_meta_state], outputs=csv_chart)
 
         with gr.TabItem("💰 Financial Analyst"):
             gr.Markdown('<p class="section-header">Financial Analyst</p>')
@@ -917,10 +931,15 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
             demo.load(fn=finance_calc, inputs=[fin_revenue, fin_cogs, fin_opex, fin_cur], outputs=[fin_metrics, fin_chart])
 
 if __name__ == "__main__":
+    import warnings
+    warnings.filterwarnings("ignore")
     demo.launch(
         server_name="0.0.0.0",
         server_port=8081,
         share=False,
         theme=CUSTOM_THEME,
         css=CUSTOM_CSS,
+        ssr_mode=False,
+        num_workers=1,
+        show_error=False,
     )

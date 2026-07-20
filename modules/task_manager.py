@@ -2,8 +2,17 @@ import json
 import datetime
 import threading
 import time
-from utils.config import TASKS_FILE, CHECK_INTERVAL_SECONDS
-from modules.notification import trigger_windows_notification
+
+try:
+    from utils.config import TASKS_FILE, CHECK_INTERVAL_SECONDS
+    from modules.notification import trigger_windows_notification
+except ImportError:
+    # Running as script, not as module
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from utils.config import TASKS_FILE, CHECK_INTERVAL_SECONDS
+    from modules.notification import trigger_windows_notification
 
 
 class TaskManager:

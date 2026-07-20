@@ -133,12 +133,22 @@ def _run(coro):
             loop.close()
 
 
+def truncate_prompt(prompt: str, max_chars: int = None) -> str:
+    if max_chars is None:
+        max_chars = config.MAX_PROMPT_CHARS
+    if len(prompt) <= max_chars:
+        return prompt
+    half = max_chars // 2
+    return prompt[:half] + "\n\n...[middle truncated]...\n\n" + prompt[-half:]
+
+
 def query_model(
     prompt: str,
     system_prompt: str = config.DEFAULT_SYSTEM_PROMPT,
     temperature: float = config.CHAT_TEMPERATURE,
     max_tokens: int = config.CHAT_MAX_TOKENS,
 ) -> ChatResult:
+    prompt = truncate_prompt(prompt)
     return _run(_chat_async(prompt, system_prompt, temperature, max_tokens))
 
 
@@ -147,4 +157,6 @@ def embed_text(text: str) -> EmbedResult:
 
 
 def query_model_many(jobs: list[dict]) -> list[ChatResult]:
+    for j in jobs:
+        j["prompt"] = truncate_prompt(j.get("prompt", ""))
     return _run(_call_many_async(jobs))

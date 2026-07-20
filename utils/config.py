@@ -29,5 +29,9 @@ CHECK_INTERVAL_SECONDS = 60
 RAG_TOP_K = 3
 RAG_CHUNK_SIZE = 400
 
+# --- Context window ------------------------------------------------------------
+MAX_PROMPT_CHARS = 3000  # ~750-1500 tokens, safe within 4096 ctx
+MAX_HISTORY_TURNS = 6     # only last N exchanges sent to model
+
 # --- Defaults -------------------------------------------------------------------
 DEFAULT_SYSTEM_PROMPT = "You are a helpful business assistant."

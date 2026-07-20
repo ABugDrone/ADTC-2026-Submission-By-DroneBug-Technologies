@@ -16,14 +16,16 @@ echo.
 
 :: --- 0. Clean up stale processes ---
 echo %ESC%[90m[*] Cleaning up previous session...%ESC%[0m
+taskkill /f /im python.exe /fi "WINDOWTITLE eq *BusinessPilot*" >nul 2>&1
+taskkill /f /im python.exe /fi "WINDOWTITLE eq *llama*" >nul 2>&1
 for /f "tokens=5" %%a in ('netstat -ano ^| find ":%LLAMA_PORT%" ^| find "LISTENING" 2^>nul') do taskkill /f /pid %%a >nul 2>&1
 for /f "tokens=5" %%a in ('netstat -ano ^| find ":%APP_PORT%" ^| find "LISTENING" 2^>nul') do taskkill /f /pid %%a >nul 2>&1
-timeout /t 1 /nobreak >nul
+timeout /t 2 /nobreak >nul
 
-:: --- 1. Start llama.cpp + Tiny Aya Earth model server ---
+:: --- 1. Start Tiny Aya Earth model server ---
 echo %ESC%[33m[1/2]%ESC%[0m Starting local AI model...
 echo       llama-server with tiny-aya-earth Q4_K_M on port %LLAMA_PORT%
-start "BusinessPilot-LlamaServer" /min "%ROOT%\start_llama_server.bat"
+start "BusinessPilot-LlamaServer" /min "%ROOT%\run tiny aya model.bat"
 
 set "WAIT=0"
 <nul set /p "=      waiting"
