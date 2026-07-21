@@ -10,6 +10,14 @@ set NO_PROXY=localhost,127.0.0.1,::1
 set HTTPS_PROXY=
 set HTTP_PROXY=
 
+:: Free port 8081 and 8082 before starting
+for /f "tokens=5" %%a in ('netstat -ano ^| find ":8081" ^| find "LISTENING" 2^>nul') do (
+    taskkill /f /pid %%a >nul 2>&1
+)
+for /f "tokens=5" %%a in ('netstat -ano ^| find ":8082" ^| find "LISTENING" 2^>nul') do (
+    taskkill /f /pid %%a >nul 2>&1
+)
+
 :: Locate Python
 where python >nul 2>&1
 if errorlevel 1 (
