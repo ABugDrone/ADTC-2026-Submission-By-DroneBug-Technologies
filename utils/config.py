@@ -30,7 +30,7 @@ RAG_TOP_K = 3
 RAG_CHUNK_SIZE = 400
 
 # --- Context window ------------------------------------------------------------
-MAX_PROMPT_CHARS = 1800  # ~1200 tokens, safe within 2048 ctx (-c 2048)
+MAX_PROMPT_CHARS = 3500  # ~2300 tokens, safe within 4096 ctx (-c 4096)
 MAX_HISTORY_TURNS = 4     # only last N exchanges sent to model
 
 # --- Defaults -------------------------------------------------------------------

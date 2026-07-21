@@ -964,12 +964,10 @@ if __name__ == "__main__":
     import warnings
     warnings.filterwarnings("ignore")
     demo.launch(
-        server_name="0.0.0.0",
+        server_name="127.0.0.1",
         server_port=8081,
         share=False,
         theme=CUSTOM_THEME,
         css=CUSTOM_CSS,
-        ssr_mode=False,
-        num_workers=1,
-        show_error=False,
+        show_error=True,
     )
