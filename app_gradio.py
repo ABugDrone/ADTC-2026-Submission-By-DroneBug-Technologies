@@ -140,8 +140,8 @@ def chat_with_rag(message, history, lang, doc_text, doc_name, rag_log):
     if not context_parts:
         context_parts.append("Context: Default business knowledge.")
     full_prompt = "\n\n".join(context_parts) + f"\n\nQuestion: {message}"
-    if len(full_prompt) > 8000:
-        full_prompt = full_prompt[:8000] + "\n\n[context truncated]"
+    if len(full_prompt) > config.MAX_PROMPT_CHARS * 2:
+        full_prompt = full_prompt[:config.MAX_PROMPT_CHARS] + "\n\n[context truncated]"
     result = ai_engine.query_model(
         full_prompt,
         _lang_system(lang) + " Answer clearly using provided context.",
