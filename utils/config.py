@@ -10,7 +10,7 @@ LLAMA_EMBED_ENDPOINT = f"{LLAMA_HOST}/v1/embeddings"
 # --- Model tuning ---------------------------------------------------------------
 EMBED_DIM = int(os.environ.get("EMBED_DIM", "1536"))
 REQUEST_TIMEOUT = float(os.environ.get("BP_TIMEOUT", "60"))
-EMBED_TIMEOUT = float(os.environ.get("BP_EMBED_TIMEOUT", "15"))
+EMBED_TIMEOUT = float(os.environ.get("BP_EMBED_TIMEOUT", "90"))
 CHAT_TEMPERATURE = 0.2
 CHAT_MAX_TOKENS = 512
 

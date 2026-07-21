@@ -40,8 +40,12 @@ def _check_model():
         return "Not running"
 
 def _check_embed():
-    r = ai_engine.embed_text("test")
-    return f"{len(r.vector)}-dim vectors" if r.ok else "Not running"
+    try:
+        import httpx
+        r = httpx.get(f"{config.LLAMA_HOST}/v1/models", timeout=3)
+        return "Available" if r.status_code == 200 else "Not running"
+    except Exception:
+        return "Not running"
 
 def _check_kb():
     try:
@@ -126,7 +130,10 @@ def chat_with_rag(message, history, lang, doc_text, doc_name, rag_log):
     context_parts = []
     if doc_text:
         context_parts.append(f"Document '{doc_name}' (converted to Markdown):\n{doc_text[:1500]}")
-    rag_results = db.search(message)
+    try:
+        rag_results = db.search(message)
+    except Exception:
+        rag_results = []
     if rag_results:
         rag_text = "\n".join(f"[{r.source}] {r.content[:300]}" for r in rag_results[:2])
         context_parts.append("Relevant context:\n" + rag_text)
@@ -320,28 +327,38 @@ def csv_process_and_index(filepath):
     filepath = str(filepath)
     name = os.path.basename(filepath)
     md = _csv_to_markdown(filepath, name)
-    result = db.add_document(name, md)
+    try:
+        result = db.add_document(name, md)
+        msg = f"Auto-indexed **{name}** — {result['chunks']} chunks, {result['embedded']} vectors. Ask questions below."
+    except Exception:
+        result = {"chunks": 0, "embedded": 0}
+        msg = f"Loaded **{name}** (indexing deferred). Ask questions below."
     df = DataAnalyzer.read_csv(filepath)
     cols = list(df.columns)
     num_cols = df.select_dtypes(include=["number"]).columns.tolist()
     shape = df.shape
     del df
     meta = {"name": name, "cols": cols, "num_cols": num_cols, "shape_row": shape[0], "shape_col": shape[1], "filepath": filepath}
-    msg = f"Auto-indexed **{name}** — {result['chunks']} chunks, {result['embedded']} vectors. Ask questions below."
     return meta, msg
 
 def data_qa_csv(question, meta, lang):
     if not meta:
         return "No dataset loaded. Upload a CSV first."
-    rag_results = db.search(question)
+    try:
+        rag_results = db.search(question)
+    except Exception:
+        rag_results = []
     context = ""
     if rag_results:
         context = "\n".join(f"[{r.source}] {r.content[:500]}" for r in rag_results[:2])
     else:
         context = f"Dataset: {meta['name']} ({meta['shape_row']} rows, {meta['shape_col']} cols, columns: {', '.join(meta['cols'])})"
     prompt = f"{context}\n\nQuestion: {question}"
-    result = ai_engine.query_model(prompt, _lang_system(lang) + " You are a data analyst. Answer with specific numbers.")
-    return result.text if result.ok else result.error
+    try:
+        result = ai_engine.query_model(prompt, _lang_system(lang) + " You are a data analyst. Answer with specific numbers.")
+        return result.text if result.ok else result.error
+    except Exception as e:
+        return f"Error: {e}"
 
 def data_build_chart(x, y, chart_type, pie_val, meta):
     if not meta:
@@ -848,19 +865,18 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
             kb_refresh_btn.click(fn=kb_list, outputs=kb_content)
             kb_delete_btn.click(fn=delete_kb_doc, inputs=[kb_delete_name], outputs=kb_content)
 
-            def chat_fn(msg, history):
+            def chat_fn(msg, history, lang, doc_text, doc_name, rag_log, chat_id, chat_title):
                 if history is None:
                     history = []
                 history = list(history)
-                # Gradio 6: messages format with {role, content}
                 history.append({"role": "user", "content": msg})
-                reply = chat_with_rag(msg, history, lang_selector.value, doc_text_state.value, doc_name_state.value, rag_log_state.value)
+                reply = chat_with_rag(msg, history, lang, doc_text, doc_name, rag_log)
                 history.append({"role": "assistant", "content": reply})
-                cid, ctitle = save_chat_on_message(history, chat_id_state.value, chat_title_state.value)
+                cid, ctitle = save_chat_on_message(history, chat_id, chat_title)
                 return history, "", cid, ctitle
 
-            rag_send_btn.click(fn=chat_fn, inputs=[rag_msg, rag_chatbot], outputs=[rag_chatbot, rag_msg, chat_id_state, chat_title_state])
-            rag_msg.submit(fn=chat_fn, inputs=[rag_msg, rag_chatbot], outputs=[rag_chatbot, rag_msg, chat_id_state, chat_title_state])
+            rag_send_btn.click(fn=chat_fn, inputs=[rag_msg, rag_chatbot, lang_selector, doc_text_state, doc_name_state, rag_log_state, chat_id_state, chat_title_state], outputs=[rag_chatbot, rag_msg, chat_id_state, chat_title_state])
+            rag_msg.submit(fn=chat_fn, inputs=[rag_msg, rag_chatbot, lang_selector, doc_text_state, doc_name_state, rag_log_state, chat_id_state, chat_title_state], outputs=[rag_chatbot, rag_msg, chat_id_state, chat_title_state])
             rag_new_btn.click(fn=new_chat, outputs=[rag_chatbot, chat_title_state, chat_id_state])
 
             saved_chats_refresh.click(fn=load_chat_list, outputs=[saved_chats_dd])
@@ -890,8 +906,19 @@ with gr.Blocks(title="BusinessPilot AI") as demo:
 
             def csv_upload_handler(file):
                 if file is None:
-                    return None, "", None, [], [], []
-                meta, msg = csv_process_and_index(file)
+                    return None, "", None, [], [], [], []
+                try:
+                    meta, msg = csv_process_and_index(file)
+                except Exception as e:
+                    filepath = str(file)
+                    name = os.path.basename(filepath)
+                    df = DataAnalyzer.read_csv(filepath)
+                    meta = {"name": name, "cols": list(df.columns), "num_cols": df.select_dtypes(include=["number"]).columns.tolist(), "shape_row": df.shape[0], "shape_col": df.shape[1], "filepath": filepath}
+                    preview = df.head(12)
+                    info = f"Shape: {df.shape[0]} rows x {df.shape[1]} columns"
+                    msg = f"Loaded **{name}** (indexing deferred — embeddings slow on CPU)"
+                    del df
+                    return meta, msg, preview, info, gr.Dropdown(choices=meta["cols"]), gr.Dropdown(choices=meta["num_cols"]), gr.Dropdown(choices=["Count"] + meta["num_cols"])
                 df = DataAnalyzer.read_csv(str(file))
                 preview = df.head(12)
                 info = f"Shape: {df.shape[0]} rows x {df.shape[1]} columns"
