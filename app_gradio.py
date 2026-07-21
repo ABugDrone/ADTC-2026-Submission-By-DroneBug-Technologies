@@ -56,50 +56,53 @@ def home_page():
     status_kb = _check_kb()
 
     def _badge(ok, label):
-        color = "#166534" if ok else "#DC2626"
-        bg = "#DCFCE7" if ok else "#FEE2E2"
-        return f"<span style='font-size:11px;font-weight:600;color:{color};background:{bg};padding:3px 8px;border-radius:999px;'>{label}</span>"
+        color = "#4ade80" if ok else "#f87171"
+        bg = "rgba(34,197,94,0.15)" if ok else "rgba(239,68,68,0.15)"
+        border = "1px solid rgba(34,197,94,0.3)" if ok else "1px solid rgba(239,68,68,0.3)"
+        return f"<span style='font-size:11px;font-weight:600;color:{color};background:{bg};border:{border};padding:3px 8px;border-radius:999px;'>{label}</span>"
+
+    _card = "background:rgba(30,41,59,0.85);border:1px solid rgba(59,130,246,0.25);border-radius:12px;padding:14px;"
 
     cards = (
         f"<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;'>"
-        f"<div style='background:rgba(255,255,255,0.9);border:1px solid #E4E7EB;border-radius:12px;padding:14px;'>"
-        f"<p style='font-size:13px;font-weight:500;margin:0 0 4px;'>Chat model</p>"
-        f"<p style='font-size:12px;color:#5B6470;margin:0 0 10px;'>{config.LLAMA_HOST}</p>"
+        f"<div style='{_card}'>"
+        f"<p style='font-size:13px;font-weight:500;color:#94a3b8;margin:0 0 4px;'>Chat model</p>"
+        f"<p style='font-size:12px;color:#64748b;margin:0 0 10px;'>{config.LLAMA_HOST}</p>"
         f"{_badge(status_model=='Connected', status_model)}</div>"
-        f"<div style='background:rgba(255,255,255,0.9);border:1px solid #E4E7EB;border-radius:12px;padding:14px;'>"
-        f"<p style='font-size:13px;font-weight:500;margin:0 0 4px;'>Embedding model</p>"
-        f"<p style='font-size:12px;color:#5B6470;margin:0 0 10px;'>{config.LLAMA_HOST}</p>"
+        f"<div style='{_card}'>"
+        f"<p style='font-size:13px;font-weight:500;color:#94a3b8;margin:0 0 4px;'>Embedding model</p>"
+        f"<p style='font-size:12px;color:#64748b;margin:0 0 10px;'>{config.LLAMA_HOST}</p>"
         f"{_badge('dim' in status_embed, status_embed)}</div>"
-        f"<div style='background:rgba(255,255,255,0.9);border:1px solid #E4E7EB;border-radius:12px;padding:14px;'>"
-        f"<p style='font-size:13px;font-weight:500;margin:0 0 4px;'>Knowledge base</p>"
-        f"<p style='font-size:12px;color:#5B6470;margin:0 0 10px;'>sqlite-vec, local file</p>"
+        f"<div style='{_card}'>"
+        f"<p style='font-size:13px;font-weight:500;color:#94a3b8;margin:0 0 4px;'>Knowledge base</p>"
+        f"<p style='font-size:12px;color:#64748b;margin:0 0 10px;'>sqlite-vec, local file</p>"
         f"{_badge('chunk' in status_kb, status_kb)}</div></div>"
     )
 
     tasks = TaskManager.get_all()
-    pri_colors = {"High": "#DC2626", "Medium": "#D97706", "Low": "#16A34A"}
+    pri_colors = {"High": "#ef4444", "Medium": "#f59e0b", "Low": "#22c55e"}
     items = ""
     for t in tasks[:20]:
         pri = t.get("priority", "Medium")
-        pc = pri_colors.get(pri, "#5B6470")
-        icon = "✅" if t.get("status") == "Completed" else "⏳"
+        pc = pri_colors.get(pri, "#94a3b8")
+        icon = "\u2705" if t.get("status") == "Completed" else "\u23f3"
         items += (
-            f"<div style='display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid #E4E7EB;border-radius:8px;margin-bottom:6px;'>"
-            f"<div><p style='font-size:13px;margin:0;'>{icon} {t['title']}</p>"
-            f"<p style='font-size:11px;margin:0;color:#5B6470;'>{t.get('date','')} {t.get('time','')}</p></div>"
+            f"<div style='display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid rgba(59,130,246,0.2);border-radius:8px;margin-bottom:6px;background:rgba(15,23,42,0.5);'>"
+            f"<div><p style='font-size:13px;margin:0;color:#e2e8f0;'>{icon} {t['title']}</p>"
+            f"<p style='font-size:11px;margin:0;color:#64748b;'>{t.get('date','')} {t.get('time','')}</p></div>"
             f"<span style='font-size:11px;font-weight:600;color:#fff;background:{pc};padding:3px 10px;border-radius:999px;'>{pri}</span></div>"
         )
     if not items:
-        items = "<p style='font-size:13px;color:#5B6470;margin:0;'>No tasks scheduled yet.</p>"
+        items = "<p style='font-size:13px;color:#64748b;margin:0;'>No tasks scheduled yet.</p>"
 
     agenda = (
-        f"<div style='background:rgba(255,255,255,0.9);border:1px solid #E4E7EB;border-radius:12px;padding:14px;'>"
-        f"<p style='font-size:13px;font-weight:500;margin:0 0 10px;'>Todays agenda</p>"
+        f"<div style='{_card}'>"
+        f"<p style='font-size:13px;font-weight:500;color:#94a3b8;margin:0 0 10px;'>Todays agenda</p>"
         f"<div style='max-height:300px;overflow-y:auto;'>{items}</div></div>"
     )
 
     footer = (
-        f"<p style='font-size:13px;color:#5B6470;margin:16px 0 0;'>Your offline AI workspace — nothing here leaves this machine.</p>"
+        f"<p style='font-size:13px;color:#64748b;margin:16px 0 0;'>Your offline AI workspace \u2014 nothing here leaves this machine.</p>"
     )
 
     return cards + agenda + footer
