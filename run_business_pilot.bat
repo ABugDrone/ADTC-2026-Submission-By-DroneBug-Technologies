@@ -20,12 +20,13 @@ taskkill /f /im python.exe /fi "WINDOWTITLE eq *BusinessPilot*" >nul 2>&1
 taskkill /f /im python.exe /fi "WINDOWTITLE eq *llama*" >nul 2>&1
 for /f "tokens=5" %%a in ('netstat -ano ^| find ":%LLAMA_PORT%" ^| find "LISTENING" 2^>nul') do taskkill /f /pid %%a >nul 2>&1
 for /f "tokens=5" %%a in ('netstat -ano ^| find ":%APP_PORT%" ^| find "LISTENING" 2^>nul') do taskkill /f /pid %%a >nul 2>&1
-timeout /t 2 /nobreak >nul
+for /f "tokens=5" %%a in ('netstat -ano ^| find ":8082" ^| find "LISTENING" 2^>nul') do taskkill /f /pid %%a >nul 2>&1
+timeout /t 3 /nobreak >nul
 
 :: --- 1. Start Tiny Aya Earth model server ---
 echo %ESC%[33m[1/2]%ESC%[0m Starting local AI model...
 echo       llama-server with tiny-aya-earth Q4_K_M on port %LLAMA_PORT%
-start "BusinessPilot-LlamaServer" /min "%ROOT%\run tiny aya model.bat"
+start "BusinessPilot-LlamaServer" /min "%ROOT%\start_llama_server.bat"
 
 set "WAIT=0"
 <nul set /p "=      waiting"
@@ -59,9 +60,9 @@ timeout /t 1 /nobreak >nul
 set /a WAIT+=1
 powershell -NoProfile -Command "try{(New-Object Net.Sockets.TcpClient).Connect('127.0.0.1',%APP_PORT%);exit 0}catch{exit 1}" >nul 2>&1
 if errorlevel 1 (
-    if !WAIT! geq 40 (
+    if !WAIT! geq 70 (
         echo.
-        echo %ESC%[91m[ERROR]%ESC%[0m App did not respond within 40s.
+        echo %ESC%[91m[ERROR]%ESC%[0m App did not respond within 70s.
         echo         Check app_stdout.log for details.
         pause
         exit /b 1
