@@ -1,23 +1,22 @@
 {
-  "model": {
-    "name": "tiny-aya-earth",
-    "version": "Q4_K_M",
-    "architecture": "cohere2",
-    "parameters": 3349227520,
-    "parameters_human": "3.35B",
-    "quantization": "GGUF Q4_K_M",
-    "context_length": 2048,
-    "download_url": "https://huggingface.co/CohereLabs/tiny-aya-earth-GGUF/resolve/main/tiny-aya-earth-q4_k_m.gguf",
-    "sha256": "",
-    "runtime": "llama.cpp (b9895)",
-    "languages": ["en", "ha"],
-    "source": "https://huggingface.co/CohereLabs/tiny-aya-earth-GGUF",
-    "description": "Tiny Aya Earth — multilingual instruction-tuned model for English and Hausa. Quantized to Q4_K_M for offline CPU inference on 8 GB RAM laptops. Download the GGUF file from Hugging Face.",
-    "capabilities": ["chat", "reasoning", "multilingual", "business_analysis"],
-    "benchmarks": {
-      "prompt_processing_tok_s": 17.8,
-      "generation_tok_s": 4.04,
-      "peak_ram_mb": 2147
-    }
+  "model_id": "tiny-aya-earth-Q4_K_M",
+  "name": "tiny-aya-earth",
+  "architecture": "cohere2",
+  "parameters": "3.35B",
+  "parameters_count": 3349227520,
+  "quantization": "Q4_K_M",
+  "format": "GGUF",
+  "context_length": 2048,
+  "languages": ["en", "ha"],
+  "runtime": "llama.cpp (b9895)",
+  "source": "https://huggingface.co/CohereLabs/tiny-aya-earth-GGUF",
+  "download_url": "https://huggingface.co/CohereLabs/tiny-aya-earth-GGUF/resolve/main/tiny-aya-earth-q4_k_m.gguf",
+  "download_script": "download_model.sh",
+  "description": "Tiny Aya Earth — multilingual instruction-tuned model for English and Hausa. Quantized to Q4_K_M for offline CPU inference on 8 GB RAM laptops.",
+  "packaging": "binary_bundle",
+  "benchmarks": {
+    "prompt_processing_tok_s": 17.8,
+    "generation_tok_s": 4.04,
+    "peak_ram_mb": 2147
   }
 }
