@@ -14,9 +14,39 @@
   "download_script": "download_model.sh",
   "description": "Tiny Aya Earth — multilingual instruction-tuned model for English and Hausa. Quantized to Q4_K_M for offline CPU inference on 8 GB RAM laptops.",
   "packaging": "binary_bundle",
+  "inference_params": {
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "top_k": 40,
+    "repeat_penalty": 1.1,
+    "max_tokens": 256,
+    "batch_size": 256,
+    "ubatch_size": 128,
+    "threads": 4
+  },
   "benchmarks": {
     "prompt_processing_tok_s": 17.8,
     "generation_tok_s": 4.04,
-    "peak_ram_mb": 2147
-  }
+    "first_token_latency_ms": 56000,
+    "peak_ram_mb": 2147,
+    "cpu_usage_pct": 95,
+    "hardware": "Lenovo T450 (i5-5300U, 8 GB DDR3, CPU-only)"
+  },
+  "accuracy": [
+    {
+      "task": "business_finance_en",
+      "description": "Calculate gross profit, margin, net profit from NGN figures",
+      "score": "pass"
+    },
+    {
+      "task": "business_advice_ha",
+      "description": "Generate 3 business improvement recommendations in Hausa",
+      "score": "pass"
+    },
+    {
+      "task": "language_switch",
+      "description": "Detect and respond in same language (EN or HA)",
+      "score": "pass"
+    }
+  ]
 }
