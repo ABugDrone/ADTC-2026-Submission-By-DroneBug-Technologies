@@ -70,6 +70,7 @@ code { background:rgba(0,180,216,0.15); padding:2px 6px; border-radius:4px; }
 .kb-chunk small { color:var(--text-muted); }
 .kb-stats { color:var(--text-muted); font-size:0.9rem; margin-bottom:10px; }
 .delete-btn { background:#e63946; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem; }
+.time-select { display:inline-block; width:auto; padding:6px 4px; text-align:center; margin:0; font-size:0.9rem; }
 
 .chat-log { max-height:400px; overflow-y:auto; border:1px solid var(--border-glow); border-radius:8px; padding:16px; margin-bottom:16px; background:var(--bg-ocean); }
 .chat-msg { margin-bottom:16px; }
@@ -155,6 +156,20 @@ code { background:rgba(0,180,216,0.15); padding:2px 6px; border-radius:4px; }
       <div>
         <label>Due Date:</label>
         <input type="date" id="task-date">
+        <label style="margin-top:8px;display:block;">Time (12hr):</label>
+        <div style="display:flex;gap:6px;">
+          <select id="task-hour" class="time-select">
+            <option value="12">12</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option>
+            <option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option>
+          </select>
+          <span style="color:var(--text-muted);line-height:38px;">:</span>
+          <select id="task-minute" class="time-select">
+            <option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
+          </select>
+          <select id="task-ampm" class="time-select">
+            <option value="AM">AM</option><option value="PM">PM</option>
+          </select>
+        </div>
       </div>
     </div>
     <button class="primary-btn" onclick="addTask()">Add Task</button>
@@ -162,7 +177,7 @@ code { background:rgba(0,180,216,0.15); padding:2px 6px; border-radius:4px; }
   <div class="card">
     <h3>Current Task Schedule</h3>
     <div class="table-container">
-      <table><thead><tr><th>Priority</th><th>Task</th><th>Due Date</th><th></th></tr></thead><tbody id="task-list"></tbody></table>
+      <table><thead><tr><th>Priority</th><th>Task</th><th>Due Date & Time</th><th></th></tr></thead><tbody id="task-list"></tbody></table>
     </div>
     <button class="primary-btn" onclick="aiReprioritizeTasks()" style="margin-top:15px;">AI Re-prioritize Tasks</button>
     <div id="task-ai-output" class="ai-response" style="display:none;"></div>
@@ -284,8 +299,8 @@ function loadTasks() {
   const d = localStorage.getItem('bizpilot_tasks');
   if (d) { tasks = JSON.parse(d); } else {
     tasks = [
-      { desc: "Finalize monthly financial forecast", priority: "1", date: "2026-07-25" },
-      { desc: "Review inventory dataset export", priority: "2", date: "2026-07-24" }
+      { desc: "Finalize monthly financial forecast", priority: "1", date: "2026-07-25", time: "10:00 AM" },
+      { desc: "Review inventory dataset export", priority: "2", date: "2026-07-24", time: "02:30 PM" }
     ]; saveTasks();
   }
 }
@@ -432,18 +447,37 @@ function clearChat() {
 // --- TASKS ---
 let editTaskIndex = -1;
 
+function getTimeStr() {
+  const h = document.getElementById('task-hour').value;
+  const m = document.getElementById('task-minute').value;
+  const a = document.getElementById('task-ampm').value;
+  return h + ':' + m + ' ' + a;
+}
+
+function setTimeStr(str) {
+  if (!str) return;
+  const parts = str.split(' ');
+  if (parts.length === 2) {
+    const hm = parts[0].split(':');
+    document.getElementById('task-hour').value = hm[0] || '12';
+    document.getElementById('task-minute').value = hm[1] || '00';
+    document.getElementById('task-ampm').value = parts[1] || 'AM';
+  }
+}
+
 function addTask() {
   const desc = document.getElementById('task-desc').value;
   const priority = document.getElementById('task-priority').value;
   const date = document.getElementById('task-date').value;
+  const time = getTimeStr();
   if (!desc || !date) return alert("Please fill in task description and date.");
   if (editTaskIndex >= 0) {
-    tasks[editTaskIndex] = { desc, priority, date };
+    tasks[editTaskIndex] = { desc, priority, date, time };
     editTaskIndex = -1;
     sendNotification('Task Updated', '"' + desc + '"');
   } else {
-    tasks.push({ desc, priority, date });
-    sendNotification('Task Added', '"' + desc + '" — ' + date);
+    tasks.push({ desc, priority, date, time });
+    sendNotification('Task Added', '"' + desc + '" — ' + date + ' ' + time);
   }
   saveTasks();
   renderTasks();
@@ -456,6 +490,7 @@ function editTask(index) {
   document.getElementById('task-desc').value = t.desc;
   document.getElementById('task-priority').value = t.priority;
   document.getElementById('task-date').value = t.date;
+  setTimeStr(t.time);
   editTaskIndex = index;
 }
 
@@ -473,7 +508,8 @@ function renderTasks() {
   list.innerHTML = tasks.map((t, i) => {
     const color = t.priority === '1' ? '#e63946' : t.priority === '2' ? '#ffb703' : '#2ec4b6';
     const label = t.priority === '1' ? 'High' : t.priority === '2' ? 'Medium' : 'Low';
-    return '<tr><td><strong style="color:' + color + '">' + label + '</strong></td><td>' + t.desc + '</td><td>' + t.date + '</td><td><button class="small-btn" onclick="editTask(' + i + ')" style="background:#00b4d8;color:white;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.8rem;margin-right:4px;">Edit</button><button class="delete-btn" onclick="deleteTask(' + i + ')">X</button></td></tr>';
+    const dt = t.date + (t.time ? ' ' + t.time : '');
+    return '<tr><td><strong style="color:' + color + '">' + label + '</strong></td><td>' + t.desc + '</td><td>' + dt + '</td><td><button class="small-btn" onclick="editTask(' + i + ')" style="background:#00b4d8;color:white;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.8rem;margin-right:4px;">Edit</button><button class="delete-btn" onclick="deleteTask(' + i + ')">X</button></td></tr>';
   }).join('');
 }
 
