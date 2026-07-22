@@ -8,3 +8,25 @@
    https://github.com/ggml-org/llama.cpp/discussions/16938 ---(current working url as at 14th July 2026) watch video tutorial fully for complete guide.
    https://github.com/ggml-org/llama.cpp/releases(versions)
 
+4. Download model as specified from tutorial via huggingface on .cmd terminal 
+   https://huggingface.co/CohereLabs/tiny-aya-earth
+
+5. Test the model on llama.cpp webUI interface first to ascertain its actual capabilities.
+   which should run seamlessly on 127.0.0.1:8083 (depending on your configurations, model download/file extractions etc. see YouTube tutorials).
+
+6. Building the App. Made a simple RAM saving plan with gemini AI code assistant to build a mere HTML file to run both llama.cpp and model,Python API, this is much more gracefully for CPU computer. The app is called Business Pilot. 
+   Gradio UI is more of prototype python UI framework, Streamlit is far more decent, but a wrapped HTML/CSS/JS into a single HTML code is far less heavier. on KBs or rendering.
+
+7. For Building process, I used OpenCode. It's a free(Free open models like DeepSeek 4 etc) Cursor-Like Agentic AI powered code generator which can search, learn,create skills of documentations-repos-tutorials and use it to plan-execute and build a production-ready project.
+
+8. Application build-test-iterations. 
+
+9. Home : UI Ensures everything works optimally.
+
+10. Smart task scheduler UI, it allows you to create task like meeting etc and use AI to suggest prioritization for task by leveraging windows notification and Calendar/Time.
+
+11. Data Analyst: Import and Preview .csv file, plot graphs like bar charts, line graphs, pie chart, scatter graph by instantly comparing selectable X and Y axis from the dataset and use AI for instant insight in English or hausa language.
+
+12. Knowledge Base and Chat UI: Business consultancy and general knowledge base AI that can read text and assist in English or Hausa or just simply chat with it.  
+
+13. Financial analyst UI: Analyze gross profit, expense and net profit in selectable African currencies then use AI to generate CFO strategic Analysis about your finances.
