@@ -1,0 +1,42 @@
+{
+  "team_id": "DroneBug Technologies",
+  "domain": "corporate_enterprise",
+  "language_scope": ["en", "ha"],
+  "african_alpha_claim": true,
+  "budget_laptop_claim": true,
+  "submitter": {
+    "name": "Gbolahan Alli",
+    "email": "7645044+gbolarhan@users.noreply.github.com",
+    "github_handle": "gbolarhan"
+  },
+  "cross_disciplinary_pairing": {
+    "discipline": "corporate_enterprise",
+    "load_bearing": true,
+    "description": "BusinessPilot AI is an offline business copilot for African SMEs combining AI scheduling, financial analysis, CSV data exploration, document Q&A, and bilingual English/Hausa chat on 8 GB laptops with no internet."
+  },
+  "test_prompts": [
+    {
+      "prompt_id": "tp_001",
+      "prompt": "A small business has revenue of 500,000 NGN, COGS of 200,000 NGN, and operating expenses of 150,000 NGN. Calculate the gross profit, gross margin percentage, and net profit. Then recommend two actions to improve profitability."
+    },
+    {
+      "prompt_id": "tp_002",
+      "prompt": "Ka ba ni shawarwari uku don inganta ribar wani karamin kantin sayar da kayan abinci a Kano. Ka yi la'akari da farashin kayayyaki, yanayin kasuwa, da kuma yadda ake jawo abokan ciniki."
+    }
+  ],
+  "model": {
+    "name": "tiny-aya-earth-Q4_K_M",
+    "runtime": "llama.cpp",
+    "quantization": "GGUF Q4_K_M",
+    "parameters_estimate": "3.35B",
+    "packaging": "binary_bundle"
+  },
+  "self_reported_profiler": {
+    "Sperf": "Sperf = 4.04",
+    "Seff": "Seff = 2.1GB",
+    "note": "Measured via llama-server (b9895) on Lenovo T450 (i5-5300U, 4 threads). pp427=17.80 tok/s, tg256=4.04 tok/s. Model: tiny-aya-earth (CohereLabs, 3.35B, Q4_K_M). Peak RSS: 2.1 GB."
+  },
+  "_runtime": {
+    "model_path": "model/tiny-aya-earth-q4_k_m.gguf"
+  }
+}
