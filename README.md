@@ -1,141 +1,110 @@
 # BusinessPilot AI — ADTC 2026 Submission
 
-<img src="https://img.shields.io/badge/domain-corporate_enterprise-blue" alt="Domain: corporate_enterprise"/> <img src="https://img.shields.io/badge/runtime-llama.cpp-green" alt="Runtime: llama.cpp"/> <img src="https://img.shields.io/badge/model-Qwen2.5--1.5B--Instruct--Q4_K_M-orange" alt="Model: Qwen2.5-1.5B-Instruct-Q4_K_M"/>
-
 **Team:** DroneBug Technologies  
 **Track:** Africa Deep Tech Challenge 2026 — Laptop LLM  
-**Domain:** Corporate Enterprise
+**Domain:** Corporate Enterprise  
+**Languages:** English / Hausa
 
-An offline business copilot for African SMEs — runs entirely on an 8 GB RAM laptop with no GPU and no internet.
+An offline business copilot for African SMEs — runs entirely on an 8 GB RAM laptop with no GPU and no internet. Bilingual (English + Hausa).
 
 ---
 
 ## Overview
 
-BusinessPilot AI combines five workspaces into a single local application:
+BusinessPilot AI provides 5 workspaces in a single local application:
 
-| Page | Purpose |
-|---|---|
-| **Home** | System status dashboard (model health, embedding service, knowledge base) |
-| **Meetings & Tasks** | Schedule, track, and AI-prioritize tasks with native Windows notifications |
-| **Chat & Knowledge Base** | Upload documents (PDF, DOCX, XLSX), convert to Markdown, query via RAG |
-| **Data & Charts** | CSV upload, preview, AI-powered data analysis, interactive Plotly charts |
-| **Financial Analyst** | African currency support, margin analysis, CFO-style AI recommendations |
+| Tab | Role | Purpose |
+|-----|------|---------|
+| **Home** | System Health | Monitor AI server status, notifications, storage |
+| **Task Scheduler** | Project Manager | Add/edit/delete tasks with priority sorting, AI re-prioritization, Windows toast notifications |
+| **Data Analyst** | Data Specialist | Upload CSV, preview, interactive charts (bar/line/pie/scatter), AI data insights |
+| **Knowledge Base** | Business Consultant | Upload .md/.txt documents, chunk and store locally, semantic search, chat with context (EN/HA) |
+| **Financial Analyst** | CFO | African currencies (NGN, KES, ZAR, GHS, EGP, USD), profit/loss calculator, bar chart, AI CFO strategic report |
+
+---
+
+## Quick Start
+
+**Prerequisites:** Windows, ~2 GB free RAM, ~3 GB free disk.
+
+```batch
+run_business_pilot.bat
+```
+
+This starts two local servers:
+1. **llama-server.exe** on `127.0.0.1:8083` — the AI inference engine (tiny-aya-earth Q4_K_M, 3.35B)
+2. **python -m http.server** on `127.0.0.1:8081` — serves the frontend
+
+Then opens `http://localhost:8081/` in your browser.
+
+Or simply double-click `static/index.html` directly (requires `--ui-mcp-proxy` on llama-server for CORS).
 
 ---
 
 ## Tech Stack
 
 | Component | Choice | Rationale |
-|---|---|---|
-| AI model | Qwen2.5-1.5B-Instruct Q4_K_M | Strong instruction following, fits 8 GB RAM |
-| Runtime | llama.cpp (b9895) | Required by ADTC, CPU-only, no GPU |
-| UI | Streamlit | Minimal overhead, single-page architecture |
-| HTTP client | httpx | Async HTTP for llama-server API calls |
-| Vector search | sqlite-vec | Local RAG, no separate server needed |
-| Charts | Plotly | Interactive, works offline |
-| Notifications | plyer | Native Win32 bindings, no polling loops |
-| Document conversion | Microsoft MarkItDown | PDF/DOCX/XLSX/Images → Markdown for LLM |
-| Language | Python 3.14 | Offline-first, standard library preferred |
-
----
-
-## Quick Start
-
-```bash
-# 1. Install Python dependencies
-pip install -r requirements.txt
-
-# 2. Download the model weights
-bash download_model.sh
-
-# 3. Start the AI server
-start_llama_server.bat
-
-# 4. Launch the app
-run_app.bat
-```
-
-Or use the all-in-one launcher:
-```bash
-run_business_pilot.bat
-```
-
-Then open **http://localhost:8081** in your browser.
+|-----------|--------|-----------|
+| AI model | tiny-aya-earth Q4_K_M (3.35B) | Multilingual (EN+HA), fits 8 GB RAM |
+| Runtime | llama-server.exe (b9895) | CPU-only, no GPU, ADTC-compliant |
+| Frontend | Single `index.html` | Zero dependencies, pure client-side |
+| Charts | Chart.js 4.4.7 | Offline, lightweight (206 KB) |
+| CSV parsing | PapaParse 5.4.1 | Client-side, no server needed |
+| Markdown | marked.js 12.0.2 | Renders AI output as formatted text |
+| Persistence | localStorage | Tasks, chat history, KB chunks survive refresh |
+| Notifications | Browser Notification API | Native Windows toasts |
+| Bilingual | System prompt + automatic detection | Responds in English or Hausa |
 
 ---
 
 ## Project Structure
 
 ```
-├── app.py                          # Streamlit entry point (Home page)
-├── pages/
-│   ├── 1_Calendar_and_Tasks.py     # Task scheduler with AI prioritization
-│   ├── 2_Chat_and_RAG.py           # Document upload, conversion, RAG chat
-│   ├── 3_Data_and_Charts.py        # CSV analysis + interactive charts
-│   └── 4_Financial_Analyst.py      # Financial metrics, African currencies
-├── utils/
-│   ├── config.py                   # Environment & path configuration
-│   ├── theme.py                    # Dark/light theme, CSS, UI components
-│   ├── ai_engine.py                # Async llama.cpp chat & embedding client
-│   └── db.py                       # sqlite-vec vector storage (RAG)
-├── modules/
-│   ├── task_manager.py             # Task persistence + daemon scheduler
-│   ├── financial.py                # Margin/CFO analysis, African currencies
-│   ├── data_analysis.py            # CSV profiling & insight prompt builder
-│   ├── markitdown_skill.py         # Document → Markdown converter
-│   └── notification.py             # plyer Windows notification wrapper
-├── Project Reports/                   # Test screenshots (11-14.png)
-├── metadata.json                   # ADTC submission metadata
-├── download_model.sh               # Downloads Qwen2.5-1.5B Q4_K_M
-├── REPORT.md                       # Technical writeup
-├── requirements.txt                # Python dependencies
-├── start_llama_server.bat          # Starts llama.cpp server
-├── run_app.bat                     # Starts Streamlit UI
-└── run_business_pilot.bat          # All-in-one launcher
+├── static/
+│   ├── index.html            # Single-page frontend (all 5 tabs)
+│   └── libs/
+│       ├── chart.umd.min.js  # Chart.js
+│       ├── papaparse.min.js  # PapaParse
+│       └── marked.min.js     # marked.js
+├── model/
+│   └── tiny-aya-earth-q4_k_m.gguf  # 3.35B GGUF model
+├── llama-b9895-bin-win-cpu-x64/
+│   ├── llama-server.exe      # AI server binary
+│   └── llama-server-impl.dll # Server implementation
+├── run_business_pilot.bat    # All-in-one launcher
+├── submission.json           # ADTC submission metadata
+├── TECHNICAL_REPORT.md       # Technical writeup
+├── Project Reports/          # Screenshots
+├── LICENSE                   # GNU GPL v3
+└── README.md                 # This file
 ```
-
----
-
-## Test Results
-
-Functional tests executed on the running application (localhost:8081, 14 July 2026):
-
-| Test | Page | What was tested | Result |
-|---|---|---|---|
-| 1 | Chat & Knowledge Base | RAG query: "marketing tips for AI offline apps" | 10-point structured response generated offline |
-| 2 | Data & Charts | CSV upload + Plotly line chart rendering | Chart built client-side, AI analysis active |
-| 3 | Financial Analyst | Nigerian Naira input (₦100k revenue, ₦40k COGS, ₦30k OpEx) | Correct metrics: ₦60k gross profit, 60% margin |
-| 4 | Financial Analyst | CFO Summary generation | 3 actionable recommendations produced offline |
-
-Screenshots are in the `Project Reports/` folder (files `11.png` through `14.png`).
 
 ---
 
 ## Offline Design
 
-- **No cloud calls** during inference — zero outbound requests after model load
-- **Inline SVG icons** — no CDN dependency for UI rendering (Tabler-style paths in `theme.py`)
-- **Local RAG** — sqlite-vec stores embeddings in `vectors.db`, no external vector DB
-- **Scheduler** — daemon thread with native Win32 notifications via plyer
-- **Document conversion** — MarkItDown fallback to manual text parsing when package absent
+- **No cloud calls** — zero outbound requests during inference
+- **No Python backend** — everything runs in the browser or as native binary
+- **All libraries bundled** — Chart.js, PapaParse, marked.js shipped in `static/libs/`
+- **System fonts only** — no web font downloads
+- **localStorage persistence** — no external database needed
+- **Bilingual by default** — system prompt tells the model to reply in whatever language the user writes in
 
 ---
 
 ## Submission Files
 
 | File | Status |
-|---|---|
-| `metadata.json` | ✅ Filled |
-| `download_model.sh` | ✅ Downloads Qwen2.5-1.5B-Instruct-Q4_K_M |
-| `REPORT.md` | ✅ Complete technical writeup with test results |
-| `Project Reports/` | ✅ Test screenshots (11.png – 14.png) |
-| `model/.gitkeep` | ✅ Placeholder (model weights excluded via `.gitignore`) |
-| `.gitignore` | ✅ Excludes `.gguf`, `__pycache__`, `tasks.json` |
+|------|--------|
+| `submission.json` | ✅ ADTC metadata filled |
+| `Hackathon Reports.txt` | ✅ Technical writeup |
+| `Project Reports/` | ✅ Screenshots |
+| `run_business_pilot.bat` | ✅ All-in-one launcher |
+| `model/tiny-aya-earth-q4_k_m.gguf` | ✅ Model weights (3.35B, Q4_K_M) |
+| `LICENSE` | ✅ GNU GPL v3 |
 
 ---
 
 ## License
 
-This project is licensed under the terms of the [GNU GPL v3 License](LICENSE).
-
+GNU General Public License v3.0 — see [LICENSE](LICENSE).

@@ -1,0 +1,23 @@
+{
+  "model": {
+    "name": "tiny-aya-earth",
+    "version": "Q4_K_M",
+    "architecture": "cohere2",
+    "parameters": 3349227520,
+    "parameters_human": "3.35B",
+    "quantization": "GGUF Q4_K_M",
+    "context_length": 2048,
+    "file": "model/tiny-aya-earth-q4_k_m.gguf",
+    "sha256": "",
+    "runtime": "llama.cpp (b9895)",
+    "languages": ["en", "ha"],
+    "source": "https://huggingface.co/CohereForAI/aya-23-8B",
+    "description": "Tiny Aya Earth — multilingual instruction-tuned model fine-tuned for English and Hausa business use cases. Quantized to Q4_K_M for offline CPU inference on 8 GB RAM laptops.",
+    "capabilities": ["chat", "reasoning", "multilingual", "business_analysis"],
+    "benchmarks": {
+      "prompt_processing_tok_s": 17.8,
+      "generation_tok_s": 4.04,
+      "peak_ram_mb": 2147
+    }
+  }
+}

@@ -8,20 +8,3 @@
    https://github.com/ggml-org/llama.cpp/discussions/16938 ---(current working url as at 14th July 2026) watch video tutorial fully for complete guide.
    https://github.com/ggml-org/llama.cpp/releases(versions)
 
-4. Download a gguf model for your operating system from huggingface. the one I selected was for webUI and compatible with windows PC using CPU not GPU.
-4.1. The .cmd terminal shows how the download process, progresses on windows PC.
-   
-5. Testing model using webUI runs on http://127.0.0.1:8033 on my Lenovo T450.(loading with microsoft edge, automatically downloads a PWA which is as you can see in the image).
-
-6. Building with Model context Protocol(MCP) server; having a working LLM is like having a creative baterry to power any electronic digitally. All that matter is how you use the prompt to fine-tune the AI at hand for specified tasks
-   So I created a python project called "Business pilot AI".
-   
-7. See project github for full details : https://github.com/ABugDrone/ADTC-2026-Submission-By-DroneBug-Technologies (Repo is subject to change as hackathon progress).
-
-7. Building process, mostly handled using OpenCode CLI(Open-source Cursor-like Agentic OpenClaw-build-on Coder, which plans and builds fullstack applications by web-crawling documentations, github repos, videos tutorials, and sometime fable 5 skills.md to learn from and recreate its own skill, then plan and build around it, using free chinese coding capable models like Deepseek 4, Nemotron, MiMo, etc) not 
- as powerful as codex or clause code, but it does the job the same for absolutely FREE.
-
-8. Project UI via webui built on streamlit running on http://localhost:8081/ (Completely offline.)
-
-9. 10. 11. 12. 13. 14 : All WebUI GUI app use case of Business Pilot AI.
-  

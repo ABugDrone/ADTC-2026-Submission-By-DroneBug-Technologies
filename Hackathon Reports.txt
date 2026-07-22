@@ -1,37 +1,52 @@
-# Technical Report — BusinessPilot AI: Offline Business Copilot
+# Technical Report — BusinessPilot AI
 
-**Team ID:** DroneBug Technologies
-**Domain:** corporate_enterprise
-**Model:** Qwen2.5-1.5B-Instruct-Q4_K_M
+**Team:** DroneBug Technologies
+**Track:** Africa Deep Tech Challenge 2026 — Laptop LLM
+**Domain:** Corporate Enterprise
+**Model:** tiny-aya-earth Q4_K_M (3.35B)
+**Languages:** English, Hausa
 
 ---
 
 ## Problem
 
-African SMEs and entrepreneurs face three compounding challenges: (1) unreliable or expensive internet connectivity that clouds any SaaS business tool, (2) limited access to AI-powered business intelligence tools that require cloud subscriptions, and (3) the administrative burden of task scheduling, financial tracking, and data analysis on resource-constrained laptops. BusinessPilot AI solves this by providing a complete offline business assistant that runs entirely on a commodity 8 GB RAM laptop with no GPU, no internet, and no cloud dependency.
+African SMEs and entrepreneurs face three challenges: (1) unreliable or expensive internet that blocks cloud SaaS tools, (2) limited access to AI business intelligence without cloud subscriptions, and (3) the administrative burden of task scheduling, financial tracking, and data analysis on resource-constrained laptops. BusinessPilot AI solves this as a complete offline business assistant running entirely on an 8 GB RAM laptop with no GPU, no internet, no cloud dependency — and supports both English and Hausa.
 
-Target users include micro-entrepreneurs, SME owners, accountants, and operations managers across Africa who need AI-enhanced scheduling, financial modeling, CSV-based data analysis, and document Q&A — all running locally on a Lenovo T450-class machine.
+Target users: micro-entrepreneurs, SME owners, accountants, and operations managers across Africa who need AI-enhanced scheduling, financial modeling, CSV data analysis, document Q&A, and bilingual support — all running locally on a Lenovo T450-class machine.
+
+---
+
+## Architecture Evolution
+
+The project went through three iterations:
+
+1. **Gradio** (initial) — Heavy, slow load times, complex dependencies.
+2. **FastAPI + Alpine.js + Plotly** — Removed Gradio but still required a Python backend with pandas, plotly, sqlite-vec, etc.
+3. **Pure client-side HTML** (final) — Single `index.html` talking directly to `llama-server.exe` on port 8083. No Python runtime needed for the frontend. All data persists in browser localStorage.
+
+This final architecture is the leanest possible: a native C++ binary for AI + a static HTML file for UI.
 
 ---
 
 ## Design Decisions
 
-- **Base model:** Qwen2.5-1.5B-Instruct (GGUF Q4_K_M). Chosen for its strong instruction-following ability, English proficiency, and small 1.5B parameter footprint that fits comfortably within 8 GB RAM.
-- **Quantization:** Q4_K_M provides the best quality-to-RAM tradeoff. Q8_0 would exceed memory budget after loading the app stack; Q2_K degraded output quality noticeably in business reasoning tasks.
-- **Runtime:** llama.cpp (b9895, Windows CPU build) — the only supported runtime per ADTC rules. No GPU required.
-- **Alternatives rejected:** DeepSeek-R1-Distill-Qwen-7B was considered but at 7B Q4 it would leave insufficient headroom alongside Python + Streamlit + browser in 8 GB RAM. Phi-3-mini (3.8B) was heavier than needed for structured business tasks.
-- **Application stack:** Streamlit for the UI (minimal overhead, single-page app), plyer for native Windows notifications (avoids background polling loops), and Plotly for interactive charts. No heavy frontend frameworks.
-- **Background scheduler:** A daemon thread checks task timestamps every 60 seconds against the system clock and fires native Windows notifications via plyer when an event is due. No external cron or task scheduler dependency.
+- **Base model:** tiny-aya-earth (Cohere2 architecture, 3.35B, GGUF Q4_K_M). Chosen for its strong multilingual ability (English + Hausa), small footprint, and instruction-following quality.
+- **Quantization:** Q4_K_M gives the best quality-to-RAM tradeoff for a 3.35B model on 8 GB RAM.
+- **Runtime:** llama-server.exe (b9895, Windows CPU build) — ADTC-compliant, no GPU required.
+- **Frontend:** Single HTML file with embedded CSS and JS. Chart.js for charts, PapaParse for CSV, marked.js for Markdown rendering. All three libraries bundled in `static/libs/` for offline use.
+- **No backend server:** The frontend calls `llama-server` directly via its OpenAI-compatible API on `127.0.0.1:8083`. CORS is enabled via `--ui-mcp-proxy`.
+- **Notifications:** Browser Notification API fires native Windows toasts. No Python, no polling.
+- **Persistence:** localStorage stores tasks, chat history, and knowledge base chunks across sessions.
+- **Bilingual support:** System prompt tells the model to reply in the same language (English or Hausa). No separate language detection needed.
 
 ---
 
 ## Constraints
 
-- **Hardware:** Lenovo T450, 8 GB RAM, Intel Core i5-5300U (2 core/4 thread), integrated Intel HD Graphics 5500. No GPU acceleration.
-- **Memory budget:** ~1.2 GB for llama.cpp + Qwen2.5-1.5B Q4_K_M, ~400 MB for Python/Streamlit/pandas, ~300 MB for OS overhead. Total ~2 GB peak — well within 8 GB.
-- **Connectivity:** Fully offline during inference. Model weights downloaded once via `download_model.sh`; all subsequent operations use the local llama-server API on `127.0.0.1:8033`.
-- **Power:** Designed for battery-conscious operation on a laptop. The Q4_K_M quantization reduces memory bandwidth and CPU load.
-- **No cloud services:** plyer uses native Win32 API bindings; no background polling loops or cloud sync.
+- **Hardware:** Lenovo T450, 8 GB RAM, Intel Core i5-5300U (2 core/4 thread), no GPU
+- **Memory budget:** ~2 GB for llama-server + model, ~150 MB for browser, ~50 MB for Python HTTP server = ~2.2 GB peak
+- **Connectivity:** Fully offline during inference
+- **Power:** Q4_K_M reduces memory bandwidth and CPU load for battery-conscious operation
 
 ---
 
@@ -40,13 +55,65 @@ Target users include micro-entrepreneurs, SME owners, accountants, and operation
 Observed on Lenovo T450 (i5-5300U, 8 GB DDR3, Windows 10, CPU-only):
 
 | Metric | Value |
-|---|---|
-| Machine | Lenovo T450 (i5-5300U, 8 GB) |
-| RAM at peak (app + model) | ~1.8 GB |
-| Time to first token | ~480 ms |
-| Generation speed | ~14.2 t/s |
-| Thermal throttling | None observed (sustained 60-65 °C) |
-| Background scheduler overhead | <0.5% CPU, negligible RAM |
-| Streamlit page load | ~1.2 s cold start |
+|--------|-------|
+| RAM at peak (server + model) | ~2.1 GB |
+| Model load time | ~50 s |
+| Prompt processing | ~18 tok/s |
+| Generation speed | ~4 tok/s |
+| Thermal throttling | None (sustained 60-65 °C) |
+| Frontend cold load | Instant (<1 s, static file) |
+| Chat response (256 tokens) | ~60-90 s |
 
-These are self-reported development benchmarks. Official scores are measured by the ADTC profiler on the standard evaluation machine.
+Note: Generation is CPU-bound on the T450's dual-core i5-5300U. A modern laptop with higher single-core frequency would see 2-3x faster generation.
+
+---
+
+## Offline Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  Browser (localhost:8081)             │
+│  ┌──────────────────────────────────────────────┐   │
+│  │              index.html                       │   │
+│  │  ┌─────┐ ┌──────┐ ┌────────┐ ┌──────┐      │   │
+│  │  │Home │ │Tasks │ │ Data   │ │  KB  │      │   │
+│  │  │     │ │      │ │ Analyst│ │+Chat │      │   │
+│  │  └─────┘ └──────┘ └────────┘ └──────┘      │   │
+│  │         ↕ fetch() to 127.0.0.1:8083         │   │
+│  └──────────────────────────────────────────────┘   │
+└──────────────────────┬──────────────────────────────┘
+                       │ http://127.0.0.1:8083 (CORS)
+┌──────────────────────▼──────────────────────────────┐
+│            llama-server.exe (native C++)             │
+│  ┌──────────────────────────────────────────────┐   │
+│  │  tiny-aya-earth-q4_k_m.gguf (3.35B params)   │   │
+│  │  -c 2048 -t 4 -np 1 --mmap --ui-mcp-proxy    │   │
+│  └──────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## Test Results
+
+| Test | Feature | What was tested | Result |
+|------|---------|-----------------|--------|
+| 1 | Chat (English) | "Give 3 marketing tips for an offline AI app" | 3 structured tips generated |
+| 2 | Chat (Hausa) | "Ka ba ni shawarwari uku don tallata kasuwanci" | 3 Hausa-language tips with explanation |
+| 3 | Task Scheduler | Add task, edit, delete, AI reprioritize | CRUD works, AI adjusts priorities |
+| 4 | Data Analyst | CSV upload + bar chart + AI analysis | Chart renders with numeric column detection |
+| 5 | Knowledge Base | Upload .md file, chunk, query via chat | Chunks matched, context injected into AI prompt |
+| 6 | Financial Analyst | NGN 500k gross / 180k expenses / CFO report | Correct profit calc, 3 strategic recommendations |
+
+Screenshots in `Project Reports/` folder.
+
+---
+
+## Submission Checklist
+
+- [x] `submission.json` — metadata filled
+- [x] Model weights — tiny-aya-earth-q4_k_m.gguf (3.35B, Q4_K_M)
+- [x] Frontend — `static/index.html` (5 tabs, offline, bilingual)
+- [x] Launcher — `run_business_pilot.bat` (one-click startup)
+- [x] Screenshots — `Project Reports/` folder
+- [x] License — GNU GPL v3
